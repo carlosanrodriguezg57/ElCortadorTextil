@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background: linear-gradient(to bottom, #000000 0%, #0033cc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .main-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .login-logo {
+      width: 300px;
+      height: auto;
+    }
+
+    .login-container {
+      width: 320px;
+      padding: 24px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #D9D9D9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .form-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group input {
+      padding: 12px 16px;
+      border: 1px solid #D9D9D9;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .login-button {
+      width: 100%;
+      padding: 12px;
+      background-color: #030303;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .forgot-password {
+      font-size: 14px;
+      text-decoration: underline;
+      color: #1E1E1E;
+      align-self: flex-start;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+  <div class="main-wrapper">
+    <img class="login-logo" src="https://elcortadortextil.com/wp-content/uploads/2024/04/logo-vector-el-cortador-textil-blanco.png" alt="Logo">
+
+    <div class="login-container">
+      <div class="form-group">
+        <label>Email</label>
+        <input id="usuario" type="text" placeholder="you@example.com">
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input id="contrasena" type="password" placeholder="••••••••">
+      </div>
+
+      <button id="btnLogin" class="login-button">Entrar</button>
+      <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+      <p id="mensaje" style="color: red; font-size: 14px;"></p>
+    </div>
+  </div>
+  <script type="module">
+    import {API_BASE_URL} from "/config.js";
+    async function login() {
+      const usuario = document.getElementById('usuario').value;
+      const contrasena = document.getElementById('contrasena').value;
+      const mensaje = document.getElementById('mensaje');
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials:"include",
+          body: JSON.stringify({ usuario, contrasena })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          window.location.href = '/home'; // redirige al home
+        } else {
+          mensaje.textContent = data.mensaje || "Error de autenticación";
+        }
+
+      } catch (error) {
+        console.error("Error en login:", error);
+        mensaje.textContent = "Error al conectar con el servidor";
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const res = await fetch(`${API_BASE_URL}/api/check-session`);
+      const data = await res.json();
+      if (data.loggedIn) {
+        window.location.href = "/home";
+      }
+    });
+
+    document.getElementById("btnLogin").addEventListener("click",login);
+  </script>
+  <script src="/js/pwa.js"></script>
+</body>
+</html>

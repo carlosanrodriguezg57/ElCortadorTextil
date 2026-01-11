@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reporte de Corte</title>
+  <style>
+    body{font-family:Inter,system-ui,Arial;margin:0;background:#f5f6fa;}
+    .wrap{max-width:1100px;margin:30px auto;padding:0 16px;}
+    .card{background:#fff;border:1px solid #e6e6e6;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:20px;margin-bottom:20px;}
+    .h1{font-size:20px;font-weight:700;margin:0 0 10px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .muted{color:#666}
+    .table{width:100%;border-collapse:collapse;margin-top:8px}
+    .table th,.table td{border:1px solid #e5e7eb;padding:8px;text-align:center}
+    .table th{background:#051258;color:#fff;font-weight:600}
+    .badge{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:9999px;padding:4px 10px;font-size:12px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .btn{background:#051258;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .textarea{width:100%;min-height:90px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-family:inherit}
+    input[type="number"]{width:80px;padding:6px;border:1px solid #e5e7eb;border-radius:6px;text-align:center}
+    input[type="text"]{width:80px;padding:6px;border:1px solid #e5e7eb;border-radius:6px;text-align:center}
+    .back{color:#051258;text-decoration:none}
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a class="back" href="/home">← Volver</a>
+      <span id="ordenBadge" class="badge">ORD-</span>
+    </div>
+
+    <!-- Tarjeta resumen de la orden -->
+    <div class="card">
+      <div class="h1">Resumen de la Orden</div>
+      <div class="grid">
+        <div><strong>Cliente:</strong> <span id="clienteNombre">-</span></div>
+        <div><strong>Tipo prenda:</strong> <span id="tipoPrenda">-</span></div>
+        <div><strong>referencia:</strong> <span id="referencia">-</span></div>
+        <div><strong>Fecha creación:</strong> <span id="fechaCreacion">-</span></div>
+        <div><strong>Fecha programada:</strong> <span id="fechaProgramada">-</span></div>
+        <div><strong>Total prendas:</strong> <span id="totalPlan">0</span></div>
+        <div><strong>Materiales:</strong> <span id="materiales">0</span></div>
+        <div><strong>Muestra Física:</strong> <span id="muestra_fisica">0</span></div>
+        <div><strong>Fusionado:</strong> <span id="fusionado">0</span></div>
+        <div><strong>Tiqueteado:</strong> <span id="tiqueteado">0</span></div>
+        <div><strong>Separar borado/Estampado:</strong> <span id="separar">0</span></div>
+        <div><strong>Perforaciones:</strong> <span id="perforaciones">0</span></div>
+        <div><strong>Liquidar Tela:</strong> <span id="liquidar">0</span></div>
+        <div><strong>Observaciones:</strong> <span id="observaciones_orden">0</span></div>
+        <div><strong>Creado por:</strong> <span id="usuario_id">0</span></div>
+        <div><strong>Estado:</strong> <span id="estado">0</span></div>
+      </div>
+    </div>
+
+    <!-- Matriz (tallas x colores) -->
+    <div class="card">
+      <div class="h1">Reporte de Corte (unidades reales)</div>
+      <div class="muted" style="margin-bottom:8px">Edita las cantidades si difieren de lo planificado.</div>
+      <table class="table" id="tablaCorte">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div style="margin-top:16px">
+        <label><strong>Observaciones</strong></label>
+        <textarea id="observaciones" class="textarea" placeholder="Observaciones del corte..."></textarea>
+      </div>
+      <p><strong>Ficha técnica:</strong> <span id="archivoFicha"></span></p>
+      <div class="matriz-container">
+        <h3>Cantidad piezas</h3>
+        <table class="matriz">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tela Principal</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_TP"></td>
+              <td><input type="text" placeholder="Tela Principal" placeholder="0" id="Material_TP"></td>
+            </tr>
+            <tr>
+              <td>Forro</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_forro"></td>
+              <td><input type="text" placeholder="Forro" placeholder="0" id="Material_forro"></td>
+            </tr>
+            <tr>
+              <td>Fusionado (entretela)</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_fusionado"></td>
+              <td><input type="text" placeholder="Entretela" placeholder="0" id="Material_entretela"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Matriz de Liquidación -->
+        <div class="card">
+          <div class="h1">Liquidación de Tela</div>
+          <div class="muted" style="margin-bottom:8px">Registra la información de rollos y materiales cortados.</div>
+
+          <table class="table" id="tablaLiquidacion">
+            <thead>
+              <tr>
+                <th>N° Rollo</th>
+                <th>Tipo tela</th>
+                <th>Metros Ticket</th>
+                <th>Color</th>
+                <th>Largo Capa (m)</th>
+                <th>Cant. Capas</th>
+                <th>N° Retazos</th>
+                <th>Metraje Retazos (m)</th>
+                <th>Sesgo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyLiquidacion"></tbody>
+          </table>
+
+          <div style="margin-top:8px">
+            <button type="button" id="btnAgregarFila" class="btn">➕ Agregar fila</button>
+          </div>
+        </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button id="btnGuardar" class="btn">Guardar corte</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Helpers ---
+    function getParam(name){
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+    function pad2(n){return String(n).padStart(2,'0')}
+    function formatDateTimeUTC(isoString){
+      if(!isoString) return "-";
+      // Visual (dd/mm/yyyy hh:mm:ss) en zona local
+      const d = new Date(isoString);
+      const Y=d.getFullYear(), M=pad2(d.getMonth()+1), D=pad2(d.getDate());
+      const hh=pad2(d.getHours()), mm=pad2(d.getMinutes()), ss=pad2(d.getSeconds());
+      return `${D}/${M}/${Y} ${hh}:${mm}:${ss}`;
+    }
+
+    //Helper booleanos
+    function boolToSiNo(valor) {
+    return valor ? "Sí" : "No";
+    }
+
+
+    const ordenId = getParam('orden');
+    const thead = document.getElementById("thead");
+    const tbody = document.getElementById("tbody");
+
+    // ===============================
+    //   AUTOGUARDADO EN LOCALSTORAGE
+    // ===============================
+    let STORAGE_KEY = null;
+
+    // Guardar todo el formulario actual
+    function guardarEstado() {
+      if (!STORAGE_KEY) return;
+
+      const estado = {
+        observaciones: document.getElementById("observaciones").value || "",
+        piezas: {
+          TP: document.getElementById("N_piezas_TP").value || "",
+          forro: document.getElementById("N_piezas_forro").value || "",
+          fusionado: document.getElementById("N_piezas_fusionado").value || ""
+        },
+        matrizCorte: [],
+        matrizLiquidacion: []
+      };
+
+      // --- Captura Matriz Corte ---
+      const inputsCorte = document.querySelectorAll('#tbody input[type="number"]');
+      inputsCorte.forEach(i => {
+        estado.matrizCorte.push({
+          color: i.getAttribute("data-color"),
+          talla: i.getAttribute("data-talla"),
+          valor: i.value
+        });
+      });
+
+      // --- Captura Matriz Liquidación ---
+      const filas = document.querySelectorAll("#tbodyLiquidacion tr");
+      filas.forEach(tr => {
+        estado.matrizLiquidacion.push({
+          numero_rollo: tr.querySelector(".num-rollo")?.value || "",
+          tipo_tela: tr.querySelector(".tipo-tela")?.value || "",
+          metros_ticket: tr.querySelector(".metros_ticket")?.value || "",
+          color: tr.querySelector(".color")?.value || "",
+          largo_capa: tr.querySelector(".largo-capa")?.value || "",
+          cantidad_capas: tr.querySelector(".cantidad-capas")?.value || "",
+          n_retazos: tr.querySelector(".n-retazos")?.value || "",
+          metraje_retazos: tr.querySelector(".metraje-retazos")?.value || "",
+          sesgo: tr.querySelector(".sesgo")?.value || ""
+        });
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+    }
+
+
+    // ===============================
+    //   RESTAURAR
+    // ===============================
+    function restaurarEstado() {
+      if (!STORAGE_KEY) return;
+
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (!data) return;
+
+      const e = JSON.parse(data);
+
+      // Observaciones
+      document.getElementById("observaciones").value = e.observaciones || "";
+
+      // Piezas
+      document.getElementById("N_piezas_TP").value = e.piezas.TP || "";
+      document.getElementById("N_piezas_forro").value = e.piezas.forro || "";
+      document.getElementById("N_piezas_fusionado").value = e.piezas.fusionado || "";
+
+      // Matriz Corte
+      e.matrizCorte.forEach(item => {
+        const inp = document.querySelector(
+          `#tbody input[data-color="${item.color}"][data-talla="${item.talla}"]`
+        );
+        if (inp) inp.value = item.valor;
+      });
+
+      // Matriz Liquidación
+      tbodyLiq.innerHTML = "";
+      e.matrizLiquidacion.forEach(f => {
+        const tr = crearFilaLiquidacion();
+        tr.querySelector(".num-rollo").value = f.numero_rollo;
+        tr.querySelector(".tipo-tela").value = f.tipo_tela;
+        tr.querySelector(".metros_ticket").value = f.metros_ticket;
+        tr.querySelector(".color").value = f.color;
+        tr.querySelector(".largo-capa").value = f.largo_capa;
+        tr.querySelector(".cantidad-capas").value = f.cantidad_capas;
+        tr.querySelector(".n-retazos").value = f.n_retazos;
+        tr.querySelector(".metraje-retazos").value = f.metraje_retazos;
+        tr.querySelector(".sesgo").value = f.sesgo;
+
+        tbodyLiq.appendChild(tr);
+      });
+    }
+
+
+    // ===============================
+    //   INICIALIZAR AUTOGUARDADO
+    // ===============================
+    document.addEventListener("input", () => guardarEstado());
+
+
+    // ===============================
+    //   BORRAR ESTADO AL GUARDAR CORTE
+    // ===============================
+    function limpiarEstado() {
+      if (STORAGE_KEY) localStorage.removeItem(STORAGE_KEY);
+    }
+
+    async function cargarOrden() {
+      if(!ordenId){
+        alert("Falta el parámetro ?orden=ID");
+        return;
+      }
+      // Trae orden + matriz tal cual DETALLES_ORDENES
+      const res = await fetch(`/api/ordenes/${encodeURIComponent(ordenId)}/completo`);
+      if(!res.ok){
+        alert("No fue posible cargar la orden");
+        return;
+      }
+      const { orden, columnasTallas, matriz } = await res.json();
+      STORAGE_KEY = "reporte_corte_" + orden.id;
+
+      // Tarjeta resumen
+      document.getElementById("ordenBadge").textContent = orden.id;
+      document.getElementById("clienteNombre").textContent = orden.cliente_nombre || orden.cliente_id || "-";
+      document.getElementById("tipoPrenda").textContent = orden.tipo_prenda || "-";
+      document.getElementById("referencia").textContent = orden.referencia || "-";
+      document.getElementById("fechaCreacion").textContent = formatDateTimeUTC(orden.created_date);
+      document.getElementById("fechaProgramada").textContent = formatDateTimeUTC(orden.fecha_programada);
+      document.getElementById("totalPlan").textContent = orden.total_unidades ?? 0;
+      document.getElementById("materiales").textContent = orden.cantidad_materiales ?? matriz.length;
+      document.getElementById("muestra_fisica").textContent = boolToSiNo(orden.muestra_fisica);
+      document.getElementById("fusionado").textContent = boolToSiNo(orden.fusionado);
+      document.getElementById("tiqueteado").textContent = boolToSiNo(orden.tiqueteado);
+      document.getElementById("separar").textContent = boolToSiNo(orden.separar_bordado_estampado);
+      document.getElementById("perforaciones").textContent = boolToSiNo(orden.perforaciones);
+      document.getElementById("liquidar").textContent = boolToSiNo(orden.liquidar_tela);
+      document.getElementById("observaciones_orden").textContent = orden.observaciones;
+      document.getElementById("usuario_id").textContent = orden.usuario_nombre;
+      document.getElementById("estado").textContent = orden.estado;
+      document.getElementById("N_piezas_TP").value = orden.cantidad_piezas_telaprincipal;
+      document.getElementById("N_piezas_forro").value = orden.cantidad_piezas_forro;
+      document.getElementById("N_piezas_fusionado").value = orden.cantidad_piezas_fusionado;
+      
+
+      const archivoContainer = document.getElementById("archivoFicha");
+        if (orden.archivo) {
+          archivoContainer.innerHTML = `<a href="/archivo/${orden.archivo}" target="_blank" class="btn">Ver archivo</a>`;
+        } else {
+          archivoContainer.textContent = "No hay archivo adjunto";
+        }
+
+      // Construye encabezado
+      thead.innerHTML = "";
+      const trHead = document.createElement("tr");
+      trHead.innerHTML = `<th>Color</th>` + columnasTallas.map(t => `<th>${t}</th>`).join("");
+      thead.appendChild(trHead);
+
+      // Cuerpo (filas por color). Inputs precargados con cantidad planificada
+      tbody.innerHTML = "";
+      matriz.forEach(fila => {
+        const tr = document.createElement("tr");
+        const cColor = document.createElement("td");
+        cColor.textContent = fila.color || "(sin color)";
+        tr.appendChild(cColor);
+
+        columnasTallas.forEach(talla => {
+          const td = document.createElement("td");
+          const valorPlan = Number(fila.tallas?.[talla] ?? 0);
+          td.innerHTML = `<input type="number" min="0" value="${valorPlan}" data-color="${fila.color}" data-talla="${talla}">`;
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      // Guardar
+      document.getElementById("btnGuardar").onclick = async () => {
+        const obs = document.getElementById("observaciones").value.trim();
+        const N_piezas_TP = parseInt(document.getElementById('N_piezas_TP').value || "0", 10)
+        const N_piezas_forro = parseInt(document.getElementById('N_piezas_forro').value || "0", 10)
+        const N_piezas_fusionado = parseInt(document.getElementById('N_piezas_fusionado').value || "0", 10)
+        const inputs = tbody.querySelectorAll('input[type="number"]');
+
+        // Reagrupar a la estructura que espera el backend de cortes: [{ color, tallas: {T1:cant,...} }]
+        const mapa = new Map(); // color -> { [talla]: cant }
+        inputs.forEach(inp => {
+          const color = inp.getAttribute("data-color") || "";
+          const talla = inp.getAttribute("data-talla");
+          const cant = Number(inp.value) || 0;
+          if(!mapa.has(color)) mapa.set(color, {});
+          mapa.get(color)[talla] = cant;
+        });
+
+        const matrizCorte = Array.from(mapa.entries()).map(([color, tallas]) => ({ color, tallas }));
+
+        // Si guardas usuario en localStorage al loguear:
+        const usuario_id = localStorage.getItem("usuario_id") || null;
+
+        // --- Obtener matriz de liquidación ---
+        const filasLiq = tbodyLiq.querySelectorAll("tr");
+        const matrizLiquidacion = Array.from(filasLiq).map(tr => ({
+          numero_rollo: Number(tr.querySelector(".num-rollo").value) || 0,
+          tipo_tela: tr.querySelector(".tipo-tela").value,
+          metros_ticket: tr.querySelector(".metros_ticket").value || 0,
+          color: tr.querySelector(".color").value,
+          largo_capa: parseFloat(tr.querySelector(".largo-capa").value) || 0,
+          cantidad_capas: Number(tr.querySelector(".cantidad-capas").value) || 0,
+          n_retazos: Number(tr.querySelector(".n-retazos").value) || 0,
+          metraje_retazos: parseFloat(tr.querySelector(".metraje-retazos").value) || 0,
+          sesgo: Number(tr.querySelector(".sesgo").value) || 0
+        }));
+
+
+        const body = {
+          ordenes_id: orden.id,
+          usuario_id,
+          observaciones: obs,
+          matriz: matrizCorte,
+          matrizLiquidacion,
+          N_piezas_TP,
+          N_piezas_forro,
+          N_piezas_fusionado
+        };
+
+        const r = await fetch("/api/cortes", {
+          method: "POST",
+          credentials:"include",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if(r.ok){
+          alert("Corte guardado ✅");
+          // opcional: volver al Home
+          limpiarEstado();
+          location.href = "/home";
+        }else{
+          alert(data.error || "Error guardando corte");
+        }
+      };
+      // Restaurar si hay datos guardados
+    restaurarEstado();
+    }
+    // --- Liquidación ---
+      const tbodyLiq = document.getElementById("tbodyLiquidacion");
+      const btnAgregarFila = document.getElementById("btnAgregarFila");
+
+      function crearFilaLiquidacion() {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="number" min="1" placeholder="0" class="num-rollo"></td>
+          <td>
+            <select class="tipo-tela">
+              <option value="Tela principal">Tela principal</option>
+              <option value="Forro">Forro</option>
+              <option value="Entretela">Entretela</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </td>
+          <td><input type="number" step="0.01" min="0" placeholder="0.00" class="metros_ticket"></td>
+          <td><input type="text" step="0.01" min="0" placeholder="Azul" class="color"></td>
+          <td><input type="number" step="0.01" min="0" placeholder="0.00" class="largo-capa"></td>
+          <td><input type="number" min="0" placeholder="0" class="cantidad-capas"></td>
+          <td><input type="number" min="0" placeholder="0" class="n-retazos"></td>
+          <td><input type="number" step="0.01" min="0" placeholder="0.00" class="metraje-retazos"></td>
+          <td><input type="number" min="0" placeholder="0" class="sesgo"></td>
+          <td><button type="button" class="btn btnEliminarFila" style="background:#e11d48">🗑</button></td>
+        `;
+        tr.querySelector(".btnEliminarFila").onclick = () => tr.remove();
+        return tr;
+      }
+
+      btnAgregarFila.onclick = () => {
+        tbodyLiq.appendChild(crearFilaLiquidacion());
+      };
+
+      // Crear 2 filas iniciales
+      tbodyLiq.appendChild(crearFilaLiquidacion());
+    
+    cargarOrden();
+
+    async function verificarSesion() {
+      const res = await fetch("/api/session", { credentials: "include" });
+      const data = await res.json();
+      if (!data.logged) {
+        window.location.href = "/";
+      }
+    }
+    verificarSesion();
+  </script>
+  <script src="/js/pwa.js"></script>
+</body>
+</html>

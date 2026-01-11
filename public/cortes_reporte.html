@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Control de Calidad - Corte</title>
+  <style>
+    body {
+      font-family: Inter, system-ui, Arial;
+      margin: 0;
+      background: #f5f6fa;
+      color: #222;
+    }
+
+    /* ==== Header principal ==== */
+    .header-reporte {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #fff;
+      border-bottom: 1px solid #e6e6e6;
+      padding: 14px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-reporte h2 {
+      margin: 0;
+      font-weight: 700;
+      color: #051258;
+    }
+
+    /* ==== Contenedor general ==== */
+    .wrap {
+      max-width: 1100px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    /* ==== Cards ==== */
+    .card {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      animation: fadein .4s ease;
+    }
+
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card h3, .card h4 {
+      margin-top: 0;
+      color: #051258;
+      font-weight: 600;
+    }
+
+    /* ==== Botones ==== */
+    .btn {
+      background: #051258;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    .btn:hover {
+      opacity: .85;
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    /* ==== Tablas ==== */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .table th {
+      background: #051258;
+      color: white;
+      font-weight: 600;
+      padding: 10px;
+      border: 1px solid #d3d3d3;
+    }
+
+    .table td {
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .table tbody tr:hover {
+      background: #f0f3ff;
+    }
+
+    /* ==== Texto auxiliar ==== */
+    .muted {
+      color: #666;
+      font-size: 14px;
+    }
+
+    a {
+      color: #3730a3;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<div class="header-reporte">
+  <h2>Reporte de Corte</h2>
+  
+</div>
+<body>
+  <!-- contenedores donde colocar datos -->
+  <div class="wrap">
+      <div id="resumenOrden" class="card"></div>
+      <div id="matrizOrdenContainer" class="card"></div>
+      <div id="corteResumen" class="card"></div>
+      <div id="matrizCorteContainer" class="card"></div>
+      <div id="controlResumen" class="card"></div>
+      <div id="detalleControlContainer" class="card"></div>
+      <div id="liquidacionContainer" class="card"></div>
+      <button id="btnPDF" class="btn btn-primary">📄 Descargar PDF</button>
+  </div>
+</body>
+<script>
+  // Helpers rápidos
+  function formatDateTime(d){
+    if(!d) return "-";
+    const dt = new Date(d);
+    return dt.toLocaleString();
+  }
+  function boolToSiNo(v){ return v ? "Sí" : "No"; }
+  function crearTablaMatriz(columnas, matriz){
+    const table = document.createElement("table");
+    table.className = "table";
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    headRow.appendChild(document.createElement("th")).textContent = "Color";
+    columnas.forEach(c=> {
+      const th = document.createElement("th");
+      th.textContent = c;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    matriz.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.appendChild(document.createElement("td")).textContent = row.color || "-";
+      columnas.forEach(col => {
+        const td = document.createElement("td");
+        td.textContent = row.tallas?.[col] ?? 0;
+        td.style.textAlign = "center";
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    return table;
+  }
+
+  async function cargarReporte(ordenId){
+    const res = await fetch(`/api/reporte_corte/${encodeURIComponent(ordenId)}`, { credentials: "include" });
+    if(!res.ok){
+      const txt = await res.text().catch(()=>"");
+      alert("Error cargando reporte: " + (txt || res.status));
+      return;
+    }
+    const data = await res.json();
+    if(!data.ok){ alert("Error: " + (data.error||"")); return; }
+
+    const { orden, detallesOrden, corte, detallesCorte, control, detalleControl, liquidacion } = data;
+
+    // Resumen orden
+    const r = document.getElementById("resumenOrden");
+    r.innerHTML = `
+      <h3>Orden ${orden.id} — ${orden.cliente_nombre || orden.cliente_id}</h3>
+      <p><strong>Referencia:</strong> ${orden.referencia || "-" } &nbsp; <strong>Tipo prenda:</strong> ${orden.tipo_prenda || "-"}</p>
+      <p><strong>Creada:</strong> ${formatDateTime(orden.created_date)} &nbsp; <strong>Programada:</strong> ${formatDateTime(orden.fecha_programada)}</p>
+      <p><strong>Total unidades:</strong> ${orden.total_unidades ?? 0} &nbsp; <strong>Materiales:</strong> ${orden.cantidad_materiales ?? "-"}</p>
+      <p><strong>Muestra física:</strong> ${boolToSiNo(orden.muestra_fisica)} &nbsp; <strong>Fusionado:</strong> ${boolToSiNo(orden.fusionado)}</p>
+      <p><strong>Observaciones:</strong> ${orden.observaciones || "-"}</p>
+      <p><strong>Archivo:</strong> ${orden.archivo ? `<a href="/archivo/${orden.archivo.replace(/^\/uploads\//,'')}" target="_blank">Ver</a>` : "No hay archivo"}</p>
+      <hr>
+    `;
+
+    // Matriz orden (detallesOrden)
+    const mo = document.getElementById("matrizOrdenContainer");
+    mo.innerHTML = "<h4>Detalle (orden)</h4>";
+    if (detallesOrden?.columnasTallas?.length && detallesOrden?.matriz?.length) {
+      mo.appendChild(crearTablaMatriz(detallesOrden.columnasTallas, detallesOrden.matriz));
+    } else {
+      mo.innerHTML += "<div>No hay detalles en la orden.</div>";
+    }
+
+    // Resumen corte
+    const rc = document.getElementById("corteResumen");
+    if (corte) {
+      rc.innerHTML = `<h3>Corte ${corte.id}</h3>
+        <p><strong>Creado:</strong> ${formatDateTime(corte.created_date)} &nbsp; <strong>Total unidades:</strong> ${corte.total_unidades ?? 0}</p>
+        <p><strong>Observaciones:</strong> ${corte.observaciones || "-"}</p><hr>`;
+    } else {
+      rc.innerHTML = "<h3>No existe corte relacionado a esta orden</h3>";
+    }
+
+    // Matriz corte
+    const mc = document.getElementById("matrizCorteContainer");
+    mc.innerHTML = "<h4>Detalle (corte)</h4>";
+    if (detallesCorte?.columnasTallas?.length && detallesCorte?.matriz?.length) {
+      mc.appendChild(crearTablaMatriz(detallesCorte.columnasTallas, detallesCorte.matriz));
+    } else {
+      mc.innerHTML += "<div>No hay detalles en el corte.</div>";
+    }
+
+    // Control de calidad
+    const ctrl = document.getElementById("controlResumen");
+    if (control) {
+      ctrl.innerHTML = `<h4>Control de calidad </h4>
+        <p>Cantidad de piezas correcta: ${boolToSiNo(control.chk_piezas)} &nbsp; Cantidad de prendas acorde a orden: ${boolToSiNo(control.chk_prendas)} &nbsp;  Corte limpio y sin rebabas: ${boolToSiNo(control.chk_corte_limpio)}</p>
+        <p>Esquinas sin redondear / bien definidas: ${boolToSiNo(control.chk_esquinas)} &nbsp; Sin marras o defectos en el corte: ${boolToSiNo(control.chk_marras)}</p>
+        <p><strong>Observaciones:</strong> ${control.observaciones || "-"}</p><hr>`;
+    } else {
+      ctrl.innerHTML = "<h4>No hay registro de control de calidad</h4>";
+    }
+
+    // Matriz detalle control
+    const mcc = document.getElementById("detalleControlContainer");
+    mcc.innerHTML = "<h4>Detalle control de calidad</h4>";
+    if (detalleControl?.length) {
+      // necesitar columnas: sacar union de tallas
+      const cols = [...new Set(detalleControl.flatMap(r => Object.keys(r.tallas || {})))];
+      mcc.appendChild(crearTablaMatriz(cols, detalleControl));
+    } else {
+      mcc.innerHTML += "<div>No hay detalle de control.</div>";
+    }
+
+    // Liquidacion
+    const ml = document.getElementById("liquidacionContainer");
+    ml.innerHTML = "<h4>Liquidación de tela</h4>";
+
+    if (liquidacion?.length) {
+      const t = document.createElement("table");
+      t.className = "table";
+      t.innerHTML = `<thead><tr>
+          <th>N° Rollo</th><th>Tipo Tela</th><th>Metros Ticket</th><th>Color</th>
+          <th>Largo Capa</th><th>Capas</th><th>N Retazos</th><th>Metraje Retazos</th>
+          <th>Sesgo</th><th>Total</th><th>Diferencia</th>
+        </tr></thead>`;
+
+      const tbody = document.createElement("tbody");
+
+      liquidacion.forEach(l => {
+        const largo = Number(l.largo_capa) || 0;
+        const capas = Number(l.cantidad_capas) || 0;
+        const sesgo = Number(l.sesgo) || 0;
+        const retazos = Number(l.metraje_retazos) || 0;
+        const metrosTicket = Number(l.metros_ticket) || 0;
+
+        // Cálculo del total y diferencia
+        const total = (largo * capas) + sesgo + retazos;
+        const diferencia = total - metrosTicket;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${l.numero_rollo ?? ""}</td>
+          <td>${l.tipo_tela ?? ""}</td>
+          <td>${metrosTicket}</td>
+          <td>${l.color ?? ""}</td>
+          <td>${largo}</td>
+          <td>${capas}</td>
+          <td>${l.n_retazos ?? ""}</td>
+          <td>${retazos}</td>
+          <td>${sesgo}</td>
+          <td>${total.toFixed(2)}</td>
+          <td>${diferencia.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      t.appendChild(tbody);
+      ml.appendChild(t);
+    } else {
+      ml.innerHTML += "<div>No hay liquidación registrada.</div>";
+    }
+  }
+
+  // obtener parametro ?orden=...
+  const params = new URL(location.href).searchParams;
+  const ordenId = params.get("orden") || params.get("id");
+
+  if (ordenId) cargarReporte(ordenId);
+  else console.warn("Falta parametro ?orden=ID");
+
+  document.getElementById("btnPDF").addEventListener("click", async () => {
+    if (!ordenId) {
+      return alert("No se ha cargado el corte correctamente.");
+    }
+
+    try {
+      const res = await fetch(`/api/reporte_corte/${encodeURIComponent(ordenId)}/pdf`);
+      if (!res.ok) {
+        return alert("No fue posible generar el PDF.");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `reporte_corte_${ordenId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("❌ Error descargando PDF:", err);
+      alert("Hubo un error al descargar el archivo PDF.");
+    }
+  });
+
+</script>
+<script src="/js/pwa.js"></script>
+</body>
+</html>

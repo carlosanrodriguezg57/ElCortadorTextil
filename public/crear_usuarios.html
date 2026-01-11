@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Crear Usuario</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f4f4;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background-color: #051258;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    .nav-item {
+      font-size: 15px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #051258;
+      color: white;
+      transition: background 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background-color: #0a0e44;
+    }
+
+    .login-logo {
+      width: 200px;
+      height: auto;
+      margin-bottom: 30px;
+    }
+
+    /* Contenido principal */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #051258;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      margin-top: 30px;
+      padding: 12px 24px;
+      background-color: #051258;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #0a0e44;
+    }
+
+    .rollo-box {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+ <div id="navbar"></div>
+ 
+  <div class="main-content">
+    <h2>Crear Nuevo Usuario</h2>
+
+    <label>Nombre completo</label>
+    <input type="text" id="nombre">
+
+    <label>Cédula</label>
+    <input type="text" id="cedula">
+
+    <label>Teléfono</label>
+    <input type="text" id="telefono">
+
+    <label>Cargo / Rol</label>
+    <select id="cargo">
+      <option value="administrador">Administrador</option>
+      <option value="recepcion">Recepción</option>
+      <option value="corte">Corte</option>
+      <option value="fusionado">Fusionado</option>
+    </select>
+
+    <label>Usuario</label>
+    <input type="text" id="usuario">
+
+    <label>Contraseña</label>
+    <input type="password" id="contrasena">
+
+    <label>Confirmar contraseña</label>
+    <input type="password" id="confirmar">
+
+    <button class="btn" id="btnCrear">Crear Usuario</button>
+
+    <div id="mensaje"></div>
+    <div id="error"></div>
+  </div>
+  <script src="/js/include-nav.js"></script>
+  <script type="module">
+  import { API_BASE_URL } from "/config.js";
+    async function crearUsuario() {
+      const nombre = document.getElementById("nombre").value;
+      const cedula = document.getElementById("cedula").value;
+      const telefono = document.getElementById("telefono").value;
+      const cargo = document.getElementById("cargo").value;
+      const usuario = document.getElementById("usuario").value;
+      const contrasena = document.getElementById("contrasena").value;
+      const confirmar = document.getElementById("confirmar").value;
+
+      const mensaje = document.getElementById("mensaje");
+      const error = document.getElementById("error");
+      mensaje.textContent = "";
+      error.textContent = "";
+
+      if (contrasena !== confirmar) {
+        error.textContent = "Las contraseñas no coinciden.";
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/usuarios`, {
+        method: 'POST',
+        credentials:"include",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, cedula, telefono, cargo, usuario, contrasena })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        mensaje.textContent = data.mensaje || "Usuario creado exitosamente.";
+      } else {
+        error.textContent = data.mensaje || "Hubo un error al crear el usuario.";
+      }
+    }
+
+    async function verificarSesion() {
+      const res = await fetch("/api/session", { credentials: "include" });
+      const data = await res.json();
+      if (!data.logged) {
+        window.location.href = "/";
+      }
+    }
+    verificarSesion();
+
+    document.getElementById("btnCrear").addEventListener("click",crearUsuario);
+  </script>
+  <script src="/js/pwa.js"></script>
+</body>
+</html>

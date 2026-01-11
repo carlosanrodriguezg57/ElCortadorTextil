@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Principal</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f4f4;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background-color: #051258;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    .nav-item {
+      font-size: 15px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #051258;
+      color: white;
+      transition: background 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background-color: #0a0e44;
+    }
+
+    .login-logo {
+      width: 200px;
+      height: auto;
+      margin-bottom: 30px;
+    }
+
+    /* Contenido principal */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #051258;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      margin-top: 30px;
+      padding: 12px 24px;
+      background-color: #051258;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #0a0e44;
+    }
+
+    .rollo-box {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+        /* ===== Grid de tarjetas ===== */
+    .ordenes-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 25px;
+    }
+
+    /* ===== Tarjeta ===== */
+    .orden-card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .orden-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+    }
+
+    .categoria-bar {
+      height: 6px;
+      border-radius: 10px 10px 0 0;
+      margin: -12px -12px 8px -12px;
+    }
+
+    .categoria-bar.vip {
+      background-color: #e63946; /* Rojo */
+    }
+    .categoria-bar.premium {
+      background-color: #f1c40f; /* Amarillo */
+    }
+    .categoria-bar.basico {
+      background-color: #2ecc71; /* Verde */
+    }
+
+    /* ===== Header ===== */
+    .orden-header {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0033cc;
+    }
+
+    .orden-cliente {
+      font-size: 18px;
+      font-weight: 500;
+      color: #444;
+    }
+
+    /* ===== Detalles ===== */
+    .orden-detalle {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .orden-detalle strong {
+      color: #111;
+    }
+
+    /* ===== Badge (para resaltar estatus o info) ===== */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e0e7ff;
+      color: #1e3a8a;
+      margin-top: 4px;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <div class="main-content">
+     <h1>Órdenes Programadas</h1>
+  <div class="ordenes-container" id="ordenesContainer">
+    <!-- Aquí se insertan las tarjetas con JS -->
+  </div>
+  <script src="/utils/include-nav.js"></script>
+  <script type="module">
+  import { API_BASE_URL } from "/config.js";
+    async function cargarOrdenes() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/cortes`); // debes exponer este endpoint GET en tu servidor
+        const cortes = await res.json();
+
+        const container = document.getElementById("ordenesContainer");
+        container.innerHTML = "";
+
+        cortes.forEach(ord => {
+          const card = document.createElement("div");
+          card.className = "orden-card";
+
+          // Determinar color según categoría
+          let categoriaColor = "basico"; // valor por defecto
+          const categoria = (ord.categoria || "").trim().toLowerCase();
+
+          if (categoria === "vip") categoriaColor = "vip";
+          else if (categoria === "premium") categoriaColor = "premium";
+          else if (categoria === "basico") categoriaColor = "basico";
+
+
+          card.innerHTML = `
+            <div class="categoria-bar ${categoriaColor}"></div>
+            <div class="orden-header">Orden: ${ord.id}</div>
+            <div>Tipo prenda: ${ord.tipo_prenda}</div>
+            <div>Referencia: ${ord.referencia}</div>
+            <div class="orden-cliente">Cliente: ${ord.cliente_nombre || "N/A"}</div>
+            <div class="orden-detalle">
+              <strong>Fecha creación:</strong> ${ord.created_date || "-"}<br>
+              <strong>Fecha programada:</strong> ${ord.fecha_programada || "-"}<br>
+              <strong>Cantidad tallas:</strong> ${ord.cantidad_tallas || 0}<br>
+              <strong>Total unidades:</strong> ${ord.total_unidades || 0}<br>
+              <strong>Observaciones:</strong> ${ord.observaciones || 0}<br>
+            </div>
+          `;
+
+          card.onclick = () => {
+            window.location.href = `/ticketeado?corte=${encodeURIComponent(ord.id)}`;
+          };
+
+
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Error cargando órdenes:", err);
+      }
+    }
+
+    cargarOrdenes();
+
+    async function verificarSesion() {
+      const res = await fetch("/api/session", { credentials: "include" });
+      const data = await res.json();
+      if (!data.logged) {
+        window.location.href = "/";
+      }
+    }
+    verificarSesion();
+  </script>
+  <script src="/js/include-nav.js"></script>
+  </div>
+  <script src="/js/pwa.js"></script>
+</body>
+</html>

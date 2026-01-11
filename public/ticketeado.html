@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Control de Calidad - Corte</title>
+  <style>
+    body{font-family:Inter,system-ui,Arial;margin:0;background:#f5f6fa;}
+    .wrap{max-width:1000px;margin:30px auto;padding:0 16px;}
+    .card{background:#fff;border:1px solid #e6e6e6;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:20px;margin-bottom:20px;}
+    .h1{font-size:20px;font-weight:700;margin:0 0 10px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .badge{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:9999px;padding:4px 10px;font-size:12px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .btn{background:#051258;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .textarea{width:100%;min-height:90px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;font-family:inherit}
+    .checklist label{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eee;}
+    .checklist input[type="checkbox"]{width:18px;height:18px;}
+    .back{color:#051258;text-decoration:none}
+    .muted{color:#666}
+    .table{width:100%;border-collapse:collapse;margin-top:8px}
+    .table th,.table td{border:1px solid #e5e7eb;padding:8px;text-align:center}
+    .table th{background:#051258;color:#fff;font-weight:600}
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a class="back" href="/cortes_tiquete">← Volver</a>
+      <span id="corteBadge" class="badge">CORT-</span>
+    </div>
+
+    <!-- Tarjeta resumen del corte -->
+    <div class="card" id="cardCorte">
+      <div class="h1">Resumen del Corte</div>
+      <div class="grid">
+        <div><strong>Cliente:</strong> <span id="clienteNombre">-</span></div>
+        <div><strong>Fecha de creación:</strong> <span id="fechaCreacion">-</span></div>
+        <div><strong>Fecha programada:</strong> <span id="fechaProgramada">-</span></div>
+        <div><strong>Total unidades:</strong> <span id="totalUnidades">-</span></div>
+        <div><strong>Cantidad de tallas:</strong> <span id="cantidadTallas">-</span></div>
+        <div><strong>Observaciones Corte:</strong> <span id="observacionesCorte">-</span></div>
+        <div><strong>Observaciones Orden:</strong> <span id="observacionesOrden">-</span></div>
+        <div><strong>Creado por:</strong> <span id="usuarioCorte">-</span></div>
+        <div><strong>Referencia:</strong> <span id="referencia">-</span></div>
+      </div>
+    </div>
+
+    <table class="table" id="tablaMatriz"></table>
+
+    <!-- Checklist -->
+    <div class="card">
+      <div class="h1">Checklist de Control de Calidad</div>
+      <div class="muted" style="margin-bottom:10px">Marca los ítems verificados en el control del corte.</div>
+
+      <div class="checklist">
+        <label><input type="checkbox" id="chkPiezas"> Cantidad de piezas correcta</label>
+        <label><input type="checkbox" id="chkPrendas"> Cantidad de prendas acorde a orden</label>
+        <label><input type="checkbox" id="chkCorteLimpio"> Corte limpio y sin rebabas</label>
+        <label><input type="checkbox" id="chkEsquinas"> Esquinas sin redondear / bien definidas</label>
+        <label><input type="checkbox" id="chkMarras"> Sin marras o defectos en el corte</label>
+      </div>
+
+      <div style="margin-top:16px">
+        <label><strong>Observaciones del control</strong></label>
+        <textarea id="observaciones" class="textarea" placeholder="Escribe comentarios del control..."></textarea>
+      </div>
+
+      <div style="margin-top:16px">
+        <button id="btnGuardar" class="btn">Guardar Control</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // --- Helpers ---
+  function getParam(name){
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name);
+  }
+  function pad2(n){return String(n).padStart(2,'0')}
+  function formatDateTime(isoString){
+    if(!isoString) return "-";
+    const d = new Date(isoString);
+    const Y=d.getFullYear(), M=pad2(d.getMonth()+1), D=pad2(d.getDate());
+    const hh=pad2(d.getHours()), mm=pad2(d.getMinutes()), ss=pad2(d.getSeconds());
+    return `${D}/${M}/${Y} ${hh}:${mm}:${ss}`;
+  }
+
+  const corteId = getParam('corte'); // ejemplo: control_calidad.html?corte=5
+
+  async function cargarCorte(){
+    if(!corteId){
+      alert("Falta el parámetro ?corte=ID");
+      return;
+    }
+
+    const res = await fetch(`/api/cortes/${encodeURIComponent(corteId)}`);
+    if(!res.ok){
+      alert("No se pudo cargar la información del corte");
+      return;
+    }
+
+    // 💡 Aqui comprobamos exactamente lo que llega
+    const data = await res.json();
+    console.log("API /api/cortes/:id ->", data);
+
+    // Manejo seguro por si el backend devolviera el 'corte' directamente (compatibilidad)
+    const corte = data.corte ?? data;
+    const columnasTallas = data.columnasTallas ?? (Array.isArray(corte.columnasTallas) ? corte.columnasTallas : []);
+    const matriz = data.matriz ?? (Array.isArray(corte.matriz) ? corte.matriz : []);
+
+    // --- Info general del corte ---
+    document.getElementById("corteBadge").textContent = corte.id ?? ("CORT-" + corteId);
+    document.getElementById("clienteNombre").textContent = corte.cliente_nombre || "-";
+    document.getElementById("fechaCreacion").textContent = formatDateTime(corte.created_date);
+    document.getElementById("fechaProgramada").textContent = formatDateTime(corte.fecha_programada);
+    document.getElementById("totalUnidades").textContent = corte.total_unidades ?? 0;
+    document.getElementById("cantidadTallas").textContent = corte.cantidad_tallas ?? (columnasTallas.length || 0);
+    document.getElementById("observacionesCorte").textContent = corte.observaciones || "-";
+    document.getElementById("observacionesOrden").textContent = corte.observacionesOrden || "-";
+    document.getElementById("usuarioCorte").textContent = corte.usuario_nombre || "-";
+    document.getElementById("referencia").textContent = corte.referencia || "-";
+
+    // --- Tabla de matriz de colores/tallas ---
+    const table = document.getElementById("tablaMatriz");
+    table.innerHTML = ""; // limpiar
+
+    // Si no hay columnas ni matriz, mostrar mensaje
+    if (!Array.isArray(columnasTallas) || columnasTallas.length === 0 || !Array.isArray(matriz) || matriz.length === 0) {
+      // crear un simple cabezal si existe columnasTallas, de lo contrario mensaje
+      if (Array.isArray(columnasTallas) && columnasTallas.length > 0) {
+        const thead = document.createElement("thead");
+        const headRow = document.createElement("tr");
+        headRow.appendChild(document.createElement("th")).textContent = "Color";
+        columnasTallas.forEach(t => {
+          const th = document.createElement("th");
+          th.textContent = t;
+          headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+      }
+
+      const msg = document.createElement("div");
+      msg.style.padding = "12px";
+      msg.style.color = "#666";
+      msg.textContent = "No hay detalles de tallas para mostrar.";
+      table.parentNode.insertBefore(msg, table.nextSibling);
+      console.warn("No hay datos de matriz o columnasTallas vacías:", { columnasTallas, matriz });
+      return;
+    }
+
+    // Construir thead correctamente
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    headRow.appendChild(document.createElement("th")).textContent = "Color";
+    columnasTallas.forEach(t => {
+      const th = document.createElement("th");
+      th.textContent = t;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    // Construir body con inputs numéricos
+    const tbody = document.createElement("tbody");
+
+    // Normalizar cada fila de matriz para asegurar que row.tallas sea un objeto {talla: cantidad}
+    matriz.forEach(rawRow => {
+      const row = { ...rawRow };
+      // Si tallas viene como arreglo [{talla:'S', cantidad:10}, ...]
+      if (Array.isArray(row.tallas)) {
+        const obj = {};
+        row.tallas.forEach(x => {
+          // soporta {talla, cantidad} o [talla, cantidad] por si acaso
+          if (x && typeof x === "object") {
+            const t = x.talla ?? x.tallas ?? x.name ?? null;
+            const c = (x.cantidad ?? x.cant ?? x.value) ?? 0;
+            if (t) obj[t] = Number(c) || 0;
+          }
+        });
+        row.tallas = obj;
+      }
+      // Si tallas es null/undefined, convertir a objeto vacío
+      if (!row.tallas || typeof row.tallas !== "object") row.tallas = {};
+
+      const tr = document.createElement("tr");
+      const tdColor = document.createElement("td");
+      tdColor.textContent = row.color ?? "-";
+      tr.appendChild(tdColor);
+
+      columnasTallas.forEach(t => {
+        const td = document.createElement("td");
+        const inp = document.createElement("input");
+        inp.type = "number";
+        inp.min = 0;
+        inp.value = (row.tallas[t] ?? 0);
+        inp.setAttribute("data-color", row.color ?? "");
+        inp.setAttribute("data-talla", t);
+        inp.style.width = "70px";
+        inp.style.textAlign = "center";
+        inp.style.border = "1px solid #ccc";
+        inp.style.borderRadius = "4px";
+        inp.style.padding = "2px 4px";
+
+        // Opcional: resaltar si valor original != actual (se puede activar cuando se edite)
+        inp.addEventListener("input", (e) => {
+          // simple indicador visual
+          if (Number(inp.value) !== (row.tallas[t] ?? 0)) {
+            inp.style.background = "#fff7e6"; // cambio
+          } else {
+            inp.style.background = "";
+          }
+        });
+
+        td.appendChild(inp);
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+  }
+
+  // --- Guardar checklist y matriz editable ---
+  document.getElementById("btnGuardar").onclick = async () => {
+    // reconstruir matriz editable desde inputs
+    const inputs = document.querySelectorAll("#tablaMatriz input[data-color][data-talla]");
+    const mapa = {};
+
+    inputs.forEach(inp => {
+      const color = inp.dataset.color || "";
+      const talla = inp.dataset.talla || "";
+      const cantidad = parseInt(inp.value) || 0;
+      if (!mapa[color]) mapa[color] = {};
+      mapa[color][talla] = cantidad;
+    });
+
+    const matrizFinal = Object.entries(mapa).map(([color, tallas]) => ({ color, tallas }));
+
+    const body = {
+      corte_id: corteId,
+      chkPiezas: document.getElementById("chkPiezas").checked,
+      chkPrendas: document.getElementById("chkPrendas").checked,
+      chkCorteLimpio: document.getElementById("chkCorteLimpio").checked,
+      chkEsquinas: document.getElementById("chkEsquinas").checked,
+      chkMarras: document.getElementById("chkMarras").checked,
+      observaciones: document.getElementById("observaciones").value.trim(),
+      matriz: matrizFinal // 👈 se envía la matriz editable
+    };
+
+    console.log("Enviando control de calidad:", body);
+
+    const r = await fetch("/api/control_calidad", {
+      method: "POST",
+      credentials:"include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const data = await r.json();
+    if (r.ok) {
+      alert("Control de calidad guardado ✅");
+      location.href = "/home";
+    } else {
+      alert(data.error || "Error guardando el control");
+    }
+  }
+
+  // lanzar carga
+  cargarCorte();
+
+  async function verificarSesion() {
+      const res = await fetch("/api/session", { credentials: "include" });
+      const data = await res.json();
+      if (!data.logged) {
+        window.location.href = "/";
+      }
+    }
+    verificarSesion();
+</script>
+<script src="/js/pwa.js"></script>
+</body>
+</html>

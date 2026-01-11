@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Reporte de Cortes</title>
+
+  <!-- Luxon (necesario para Tabulator) -->
+   <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+
+  <!-- Tabulator -->
+  <link href="https://cdn.jsdelivr.net/npm/tabulator-tables@5.5.2/dist/css/tabulator.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
+
+
+  <!-- XLSX (para exportar a Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; margin: 20px; background: #f5f6fa; }
+    h1 { color: #051258; margin-bottom: 10px; }
+    .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    button {
+      background: #051258; color: #fff; border: none; padding: 6px 12px;
+      border-radius: 6px; cursor: pointer;
+    }
+    button:hover { background: #071e80; }
+    input, select { padding: 5px 8px; border-radius: 6px; border: 1px solid #ccc; }
+    #tabla { border-radius: 8px; overflow: hidden; }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+  <h1>Reporte de Cortes</h1>
+
+  <div class="toolbar">
+    <label>Desde: <input type="date" id="fInicio"></label>
+    <label>Hasta: <input type="date" id="fFin"></label>
+    <input id="fSearch" placeholder="Buscar cliente, usuario, etc.">
+    <button id="btnBuscar">🔍 Buscar</button>
+    <button id="btnExportar">📊 Exportar a Excel</button>
+  </div>
+
+  <div id="tabla"></div>
+
+  <script>
+    // Crear tabla Tabulator
+    const tabla = new Tabulator("#tabla", {
+      layout: "fitDataFill",
+      pagination: "local",
+      paginationSize: 20,
+      movableColumns: true,
+      resizableRows: false,
+      columns: [
+        { title: "Corte ID", field: "corte_id", width: 90, headerFilter: "input" },
+        { title: "Cliente", field: "cliente", headerFilter: "input" },
+        { title: "Fecha Creación", field: "created_date", formatter: "datetime", formatterParams:{inputFormat: "iso"} },
+        { title: "Programada", field: "fecha_programada", formatter: "datetime", formatterParams:{inputFormat: "iso", outputFormat: "DD"} },
+        { title: "Total Unidades", field: "total_unidades", hozAlign:"right", bottomCalc:"sum" },
+        { title: "Cant. Tallas", field: "cantidad_tallas", hozAlign:"right", bottomCalc:"sum" },
+        { title: "Estado", field: "estado", headerFilter:"input" },
+        { title: "Usuario", field: "usuario", headerFilter:"input" },
+        { title: "Observaciones", field: "observaciones" },
+      ],
+    });
+
+    async function cargarDatos() {
+      const fInicio = document.getElementById("fInicio").value;
+      const fFin = document.getElementById("fFin").value;
+      const search = document.getElementById("fSearch").value;
+
+      const qs = new URLSearchParams({
+        page: 1,
+        pageSize: 5000, // trae hasta 5000 registros
+        ...(fInicio ? { fecha_inicio: fInicio } : {}),
+        ...(fFin ? { fecha_fin: fFin } : {}),
+        ...(search ? { search } : {})
+      });
+
+      try {
+        const res = await fetch("/api/reportes/cortes?" + qs.toString(), { credentials: "include" });
+        const data = await res.json();
+        console.log("🔍 Datos recibidos:", data);
+        if (!data.ok) throw new Error(data.error || "Error al obtener datos");
+
+        tabla.setData(data.data);
+      } catch (err) {
+        alert("Error cargando reporte: " + err.message);
+      }
+    }
+
+    document.getElementById("btnBuscar").onclick = cargarDatos;
+
+    // Exportar a Excel
+    document.getElementById("btnExportar").onclick = () => {
+      const data = tabla.getData();
+      if (!data.length) return alert("No hay datos para exportar.");
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Cortes");
+      XLSX.writeFile(wb, "Reporte_Cortes.xlsx");
+    };
+
+    cargarDatos(); // carga inicial
+  </script>
+  <script src="/js/pwa.js"></script>
+</body>
+</html>

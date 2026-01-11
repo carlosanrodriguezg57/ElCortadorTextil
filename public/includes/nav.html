@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Principal</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f4f4;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background-color: #051258;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 20px;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      text-align: left;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      text-decoration: none; /* quita subrayado */
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+
+    .login-logo {
+      width: 200px;
+      height: auto;
+      margin-bottom: 30px;
+    }
+
+    /* Contenido principal */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #051258;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px 24px;
+      background-color: #051258;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #0a0e44;
+    }
+
+    .rollo-box {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+        /* ===== Grid de tarjetas ===== */
+    .ordenes-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 25px;
+    }
+
+    /* ===== Tarjeta ===== */
+    .orden-card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .orden-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+    }
+
+    .categoria-bar {
+      height: 6px;
+      border-radius: 10px 10px 0 0;
+      margin: -12px -12px 8px -12px;
+    }
+
+    .categoria-bar.vip {
+      background-color: #e63946; /* Rojo */
+    }
+    .categoria-bar.premium {
+      background-color: #f1c40f; /* Amarillo */
+    }
+    .categoria-bar.basico {
+      background-color: #2ecc71; /* Verde */
+    }
+
+    /* ===== Header ===== */
+    .orden-header {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0033cc;
+    }
+
+    .orden-cliente {
+      font-size: 18px;
+      font-weight: 500;
+      color: #444;
+    }
+
+    /* ===== Detalles ===== */
+    .orden-detalle {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .orden-detalle strong {
+      color: #111;
+    }
+
+    /* ===== Badge (para resaltar estatus o info) ===== */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e0e7ff;
+      color: #1e3a8a;
+      margin-top: 4px;
+    }
+  </style>
+  <style>
+  .btn-logout {
+    background-color: #c0392b;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn-logout:hover {
+    background-color: #e74c3c;
+  }
+</style>
+</head>
+<body>
+  <div class="sidebar">
+  <img class="login-logo" src="https://elcortadortextil.com/wp-content/uploads/2024/04/logo-vector-el-cortador-textil-blanco.png" alt="Logo">
+
+  <a class="nav-item" href="/home">Inicio</a>
+  <a class="nav-item" href="/recepcion">Recepción</a>
+  <a class="nav-item" href="/ordenes">Programación de corte</a>
+  <a class="nav-item" href="/cortes_tiquete">A tiquetear</a>
+  <a class="nav-item" href="/crear_usuarios">Creación de usuarios</a>
+  <a class="nav-item" href="/crear_clientes">Creación de Clientes</a>
+  <a class="nav-item" href="/remision">Remisiones</a>
+  <a class="nav-item" href="/reportes_cortes">Reporte General</a>
+
+  <button id="btnLogout" class="btn-logout">Cerrar sesión</button>
+</div>
+
+</body>
+</html>

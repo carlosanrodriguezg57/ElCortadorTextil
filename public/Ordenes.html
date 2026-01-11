@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Programación de Corte Dinámica</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f4f4;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background-color: #051258;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    .nav-item {
+      font-size: 15px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #051258;
+      color: white;
+      transition: background 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background-color: #0a0e44;
+    }
+
+    .login-logo {
+      width: 200px;
+      height: auto;
+      margin-bottom: 30px;
+    }
+
+    /* Contenido principal */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #051258;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      margin-right: 10px;
+    }
+
+    .checkbox-group {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    button {
+      margin-top: 30px;
+      margin-left: 20px;
+      padding: 12px 24px;
+      background-color: #051258;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #0a0e44;
+    }
+</style>
+<link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+<div id="navbar"></div>
+<script src="/js/include-nav.js"></script>
+
+<div class="main-content">
+  <h2>Programación de Corte</h2>
+
+  <form id="formOrden" enctype="multipart/form-data">
+    
+    <label>Cliente</label>
+    <select id="cliente">
+      <option value="">-- Selecciona un cliente --</option>
+      <!-- Aquí luego se llenará dinámicamente desde la tabla CLIENTES -->
+    </select>
+
+    <label>Categoría cliente</label>
+    <select name="categoria" id="categoria">
+      <option value="VIP">VIP</option>
+      <option value="Premium">Premium</option>
+      <option value="Basico">Básico</option>
+    </select>
+
+    <label>Referencia de corte</label>
+    <input type="text" id="referencia" placeholder="Ej: Camisa clásica, Jeans bota recta...">
+
+    <label>Ficha técnica (opcional)</label>
+    <input type="file" id="fichaTecnica" accept=".pdf,image/*">
+    <div class="file-note">Puedes cargar una imagen o PDF</div>
+
+    <label>Fecha programada</label>
+    <input type="date" id="fechaProgramada">
+
+    <label>Tipo de prenda</label>
+    <select name="tipoPrenda" id="tipoPrenda">
+      <option value="CHAQUETA">Chaqueta</option>
+      <option value="PANTALON">Pantalón</option>
+      <option value="BLUSA">Blusa</option>
+      <option value="COFIA">Cofia</option>
+      <option value="CAMISETA">Camiseta</option>
+      <option value="CONJUNTO">Conjunto</option>
+      <option value="SHORT">Short</option>
+      <option value="UNIFORME">Uniforme</option>
+      <option value="BABY DOLL">Baby doll</option>
+      <option value="PACK BEBE">Pack bebé</option>
+      <option value="BATA">Bata</option>
+      <option value="BODY">Body</option>
+      <option value="VESTIDO DE BAÑO">Vestido de baño</option>
+      <option value="CUELLO SUBLIMADO">Cuello sublimado</option>
+      <option value="CAMISETA TIPO POLO">Camiseta tipo polo</option>
+      <option value="HOODIE">Hoodie</option>
+      <option value="VESTIDO">Vestido</option>
+      <option value="CUADRO">Cuadro</option>
+      <option value="HOODIE PERRO">Hoodie perro</option>
+      <option value="LEGGIN">Leggin</option>
+      <option value="DELANTAL">Delantal</option>
+      <option value="ENTERIZO">Enterizo</option>
+      <option value="PANTALON CARGO">Pantalón cargo</option>
+      <option value="PIJAMA 2 PIEZAS">Pijama 2 piezas</option>
+      <option value="CAMISA">Camisa</option>
+      <option value="CHAQUETA 2 MATERIALES">Chaqueta 2 materiales</option>
+      <option value="CARDIGAN">Cardigan</option>
+      <option value="CAMIBUSO">Camibuso</option>
+      <option value="TOP">Top</option>
+      <option value="ABRIGO MAS DE 4 MATERIALES">Abrigo más de 4 materiales</option>
+      <option value="KIMONO">Kimono</option>
+      <option value="BLAZER">Blazer</option>
+      <option value="BLUSA MATERNA">Blusa materna</option>
+      <option value="FALDA">Falda</option>
+      <option value="JOGGER">Jogger</option>
+      <option value="BOLSA">Bolsa</option>
+      <option value="FILIPINA">Filipina</option>
+      <option value="TOTE BAG">Tote bag</option>
+      <option value="BUSHI">Bushi</option>
+      <option value="PANTY">Panty</option>
+      <option value="FALDASHORT">Faldashort</option>
+      <option value="MUESTRA">Muestra</option>
+      <option value="SUDADERA">Sudadera</option>
+      <option value="CAPA">Capa</option>
+      <option value="OTRO">Otro</option>
+</select>
+
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="muestraFisica">
+      <label for="muestraFisica">Muestra física</label>
+    </div>
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="fusionado">
+      <label for="fusionado">Fusionado</label>
+    </div>
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="tiqueteado">
+      <label for="tiqueteado">Tiqueteado</label>
+    </div>
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="separarBE">
+      <label for="separarBE">Separar bordado/estampado</label>
+    </div>
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="perforaciones">
+      <label for="perforaciones">Perforaciones</label>
+    </div>
+
+    <div class="checkbox-group">
+      <input type="checkbox" id="liquidarTela">
+      <label for="liquidarTela">Liquidar tela</label>
+    </div>
+
+    <label>Cantidad piezas</label>
+    <input type="number" id="cantidadPiezas" min="1">
+
+    <label>Observaciones</label>
+    <textarea id="observaciones" placeholder="Comentarios, instrucciones especiales..."></textarea>
+
+    <label>Cantidad de tallas</label>
+    <input type="number" id="cantidadTallas" min="1" placeholder="Ej: 4">
+
+    <label>Especifica las tallas (separadas por coma)</label>
+    <input type="text" id="listaTallas" placeholder="Ej: XS, S, M, L, XL">
+
+    <button type="button" class="btn" id="btnMatriz">Generar matriz</button>
+
+    <div id="tablaContainer" style="margin-top: 30px;"></div>
+
+    <div class="matriz-container">
+        <h3>Cantidad piezas</h3>
+        <table class="matriz">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tela Principal</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_TP"></td>
+              <td><input type="text" placeholder="Tela Principal" placeholder="0" id="Material_TP"></td>
+            </tr>
+            <tr>
+              <td>Forro</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_forro"></td>
+              <td><input type="text" placeholder="Forro" placeholder="0" id="Material_forro"></td>
+            </tr>
+            <tr>
+              <td>Fusionado (entretela)</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_fusionado"></td>
+              <td><input type="text" placeholder="Entretela" placeholder="0" id="Material_entretela"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <button type="button" id="btnGuardar">Guardar programación</button>
+  </form>
+</div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script type="module">
+  import { API_BASE_URL } from "/config.js";
+
+    function generarMatriz() {
+    const cantidad = parseInt(document.getElementById("cantidadTallas").value);
+    const tallasRaw = document.getElementById("listaTallas").value.trim();
+
+    if (!cantidad || !tallasRaw) {
+      alert("Por favor ingresa la cantidad y lista de tallas.");
+      return;
+    }
+
+    columnasTallas = tallasRaw.split(',').map(t => t.trim());
+    if (columnasTallas.length !== cantidad) {
+      alert("La cantidad de tallas no coincide con la lista especificada.");
+      return;
+    }
+
+    const tablaHTML = document.createElement("table");
+    tablaHTML.id = "tablaCorte";
+
+    // Crear encabezado
+    const thead = tablaHTML.createTHead();
+    const headerRow = thead.insertRow();
+    headerRow.innerHTML = `<th>Tela / Color</th>` + columnasTallas.map(t => `<th>${t}</th>`).join('');
+
+    // Crear cuerpo con 1 filas por defecto
+    const tbody = document.createElement("tbody");
+    for (let i = 0; i < 1; i++) {
+      const fila = tbody.insertRow();
+      const tdColor = fila.insertCell();
+      tdColor.innerHTML = `<input type="text" placeholder="Ej: Azul marino">`;
+
+      for (let j = 0; j < columnasTallas.length; j++) {
+        const td = fila.insertCell();
+        td.innerHTML = `<input type="number" min="0">`;
+      }
+    }
+
+    tablaHTML.appendChild(tbody);
+
+    const contenedor = document.getElementById("tablaContainer");
+    contenedor.innerHTML = '';
+    contenedor.appendChild(tablaHTML);
+
+    // Botón para agregar fila
+    const btnFila = document.createElement("button");
+    btnFila.className = "btn";
+    btnFila.type = "button";
+    btnFila.textContent = "Agregar fila";
+    btnFila.onclick = () => {
+      const fila = tablaHTML.querySelector("tbody").insertRow();
+      const tdColor = fila.insertCell();
+      tdColor.innerHTML = `<input type="text" placeholder="Ej: Nuevo color">`;
+      for (let j = 0; j < columnasTallas.length; j++) {
+        const td = fila.insertCell();
+        td.innerHTML = `<input type="number" min="0">`;
+      }
+    };
+
+    // Botón para eliminar la última fila
+    const btnEliminarFila = document.createElement("button");
+    btnEliminarFila.className = "btn btn-danger";
+    btnEliminarFila.type = "button";
+    btnEliminarFila.textContent = "Eliminar última fila";
+    btnEliminarFila.onclick = () => {
+      const tbody = tablaHTML.querySelector("tbody");
+      if (tbody.rows.length > 0) {
+        tbody.deleteRow(tbody.rows.length - 1);
+      } else {
+        alert("No hay filas para eliminar.");
+      }
+    };
+
+    contenedor.appendChild(btnFila);
+    contenedor.appendChild(btnEliminarFila);
+
+  }
+
+  let columnasTallas = []; // asegúrate de tenerla global
+
+  async function guardarProgramacion() {
+  const fichaTecnicaFile = document.getElementById('fichaTecnica').files[0];
+
+  // Crear el objeto FormData para enviar archivos + datos
+  const formData = new FormData();
+
+  // Agregar los campos uno por uno
+  formData.append('cliente', document.getElementById('cliente').value || '');
+  formData.append('categoria', document.getElementById('categoria').value || '');
+  formData.append('referencia', document.getElementById('referencia').value || '');
+  formData.append('fecha_programada', document.getElementById('fechaProgramada').value || '');
+  formData.append('tipo_prenda', document.getElementById('tipoPrenda').value || '');
+  formData.append('muestra_fisica', document.getElementById('muestraFisica').checked ? 1 : 0);
+  formData.append('fusionado', document.getElementById('fusionado').checked ? 1 : 0);
+  formData.append('tiqueteado', document.getElementById('tiqueteado').checked ? 1 : 0);
+  formData.append('separar_bordado_estampado', document.getElementById('separarBE').checked ? 1 : 0);
+  formData.append('perforaciones', document.getElementById('perforaciones').checked ? 1 : 0);
+  formData.append('liquidar_tela', document.getElementById('liquidarTela').checked ? 1 : 0);
+  formData.append('cantidad_piezas', document.getElementById('cantidadPiezas').value || "0");
+  formData.append('observaciones', document.getElementById('observaciones').value || '');
+  formData.append('N_piezas_TP', document.getElementById('N_piezas_TP').value || "0");
+  formData.append('N_piezas_forro', document.getElementById('N_piezas_forro').value || "0");
+  formData.append('N_piezas_fusionado', document.getElementById('N_piezas_fusionado').value || "0");
+  
+  // Agregar la matriz de tallas como JSON (convertida a texto)
+  const tabla = document.getElementById('tablaCorte');
+  if (!tabla) {
+    alert("Genera la matriz antes de guardar.");
+    return;
+  }
+
+  const matriz = [];
+  const filas = tabla.querySelector("tbody").rows;
+  for (let row of filas) {
+    const telaColor = row.cells[0].querySelector("input").value;
+    const tallasObj = {};
+    for (let i = 1; i < row.cells.length; i++) {
+      const talla = columnasTallas[i - 1];
+      const val = row.cells[i].querySelector("input").value || "0";
+      tallasObj[talla] = parseInt(val, 10) || 0;
+    }
+    matriz.push({ tela_color: telaColor, tallas: tallasObj });
+  }
+
+  formData.append('matriz', JSON.stringify(matriz));
+
+  // Agregar archivo si existe
+  if (fichaTecnicaFile) {
+    formData.append('fichaTecnica', fichaTecnicaFile);
+  }
+
+  try {
+    const resp = await fetch(`${API_BASE_URL}/api/ordenes`, {
+      method: "POST",
+      credentials: "include",
+      body: formData // 👈 NO usar headers ni JSON.stringify
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || "Error al guardar");
+    alert("Orden creada con ID: " + data.orden_id);
+    console.log("Respuesta API:", data);
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo guardar la programación: " + e.message);
+  }
+}
+
+let clienteSelectChoices;
+
+  async function cargarClientes() {
+    const select = document.getElementById("cliente");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/clientes`);
+      const clientes = await res.json();
+
+      clientes.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c.id;                   // id como valor (CLT-00001)
+        option.textContent = c.nombre_empresa; // lo que se muestra en pantalla
+        select.appendChild(option);
+      });
+
+    } catch (err) {
+      console.error("Error cargando clientes:", err);
+    }
+  }
+
+  function activarSelectBuscable() {
+    const select = document.getElementById("cliente");
+
+    // Si ya está inicializado, no lo vuelvas a activar
+    if (clienteSelectChoices) return;
+
+    clienteSelectChoices = new Choices(select, {
+      searchEnabled: true,
+      itemSelectText: '',
+      placeholder: true,
+      placeholderValue: 'Selecciona o escribe el cliente...'
+    });
+  }
+
+  // Llamar la función cuando cargue la página
+  cargarClientes();
+
+  async function verificarSesion() {
+      const res = await fetch("/api/session", { credentials: "include" });
+      const data = await res.json();
+      if (!data.logged) {
+        window.location.href = "/";
+      }
+    }
+    verificarSesion();
+  document.getElementById("btnGuardar").addEventListener("click",guardarProgramacion);
+  document.getElementById("btnMatriz").addEventListener("click",generarMatriz);
+
+</script>
+<script src="/js/pwa.js"></script>
+</body>
+</html>

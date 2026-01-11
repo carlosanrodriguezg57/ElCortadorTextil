@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Recepción de Materiales</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f4f4;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background-color: #051258;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    .nav-item {
+      font-size: 15px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #051258;
+      color: white;
+      transition: background 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background-color: #0a0e44;
+    }
+
+    .login-logo {
+      width: 200px;
+      height: auto;
+      margin-bottom: 30px;
+    }
+
+    /* Contenido principal */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #051258;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      margin-top: 30px;
+      padding: 12px 24px;
+      background-color: #051258;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #0a0e44;
+    }
+
+    .rollo-box {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+  <div id="navbar"></div>
+  <script src="/js/include-nav.js"></script>
+
+
+  <div class="main-content">
+    <h1>Formulario de Recepción</h1>
+
+    <form>
+      <label>Cliente</label>
+      <select id="cliente">
+        <option value="">-- Selecciona un cliente --</option>
+        <!-- Aquí luego se llenará dinámicamente desde la tabla CLIENTES -->
+      </select>
+
+      <label>Tipo de material</label>
+      <select id="material" onchange="toggleRolloInputs()">
+        <option value="1">Rollo de tela</option>
+        <option value="2">Bolsas</option>
+        <option value="3">Muestras</option>
+      </select>
+
+      <label>Cantidad</label>
+      <input type="number" id="cantidad" placeholder="Ej: 5, 100, 250">
+
+      <label>Unidad</label>
+      <select id="unidad">
+        <option value="rollos">Rollos</option>
+        <option value="metros">Metros</option>
+        <option value="bolsas">Bolsas</option>
+      </select>
+
+      <label>Observaciones</label>
+      <textarea id="observaciones" placeholder="Opcional..."></textarea>
+
+      <!-- Detalle de rollos -->
+      <div id="rolloDetalle" style="display:none;">
+        <label>Número de rollos</label>
+        <input type="number" id="numRollos" placeholder="Ej: 3" onchange="generarInputsRollos()">
+
+        <div id="rollosContainer"></div>
+      </div>
+
+      <button type="button" onclick="enviarRecepcion()">Registrar</button>
+    </form>
+  </div>
+
+  <script type="module">
+  import { API_BASE_URL } from "/config.js";
+    function toggleRolloInputs() {
+      const material = document.getElementById("material").value;
+      const rolloDetalle = document.getElementById("rolloDetalle");
+      if (material === "1") {
+        rolloDetalle.style.display = "block";
+      } else {
+        rolloDetalle.style.display = "none";
+        document.getElementById("rollosContainer").innerHTML = '';
+      }
+    }
+
+    function generarInputsRollos() {
+      const container = document.getElementById("rollosContainer");
+      container.innerHTML = '';
+      const num = parseInt(document.getElementById("numRollos").value);
+
+      for (let i = 1; i <= num; i++) {
+        const div = document.createElement("div");
+        div.className = "rollo-box";
+        div.innerHTML = `
+          <strong>Rollo #${i}</strong><br>
+          <label>Metros:</label>
+          <input type="number" name="rollo_metros" placeholder="Metros del rollo #${i}" required>
+
+          <label>Observaciones:</label>
+          <input type="text" name="rollo_obs" placeholder="Observaciones para rollo #${i}">
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function enviarRecepcion() {
+      const cliente_id = document.getElementById("cliente").value;
+      const material_id = document.getElementById("material").value;
+      const cantidad = document.getElementById("cantidad").value;
+      const unidad = document.getElementById("unidad").value;
+      const observaciones = document.getElementById("observaciones").value;
+
+      const data = {
+        cliente_id,
+        material_id,
+        cantidad,
+        unidad,
+        observaciones,
+        rollos: []
+      };
+
+      if (material_id === "1") {
+        const metrosInputs = document.getElementsByName("rollo_metros");
+        const obsInputs = document.getElementsByName("rollo_obs");
+
+        for (let i = 0; i < metrosInputs.length; i++) {
+          if (metrosInputs[i].value) {
+            data.rollos.push({
+              numero_rollo: i + 1,
+              metros: parseFloat(metrosInputs[i].value),
+              observaciones: obsInputs[i].value || ''
+            });
+          }
+        }
+      }
+
+      console.log("Datos a enviar:", data);
+      alert("Recepción registrada (simulada). Revisa consola.");
+    }
+
+    async function verificarSesion() {
+      const res = await fetch("/api/session", { credentials: "include" });
+      const data = await res.json();
+      if (!data.logged) {
+        window.location.href = "/";
+      }
+    }
+    verificarSesion();
+
+
+    async function cargarClientes() {
+    const select = document.getElementById("cliente");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/clientes`);
+      const clientes = await res.json();
+
+      clientes.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c.id;                   // id como valor (CLT-00001)
+        option.textContent = c.nombre_empresa; // lo que se muestra en pantalla
+        select.appendChild(option);
+      });
+
+    } catch (err) {
+      console.error("Error cargando clientes:", err);
+    }
+  }
+  window.onload = cargarClientes
+  </script>
+  <script src="/js/pwa.js"></script>
+</body>
+</html>
