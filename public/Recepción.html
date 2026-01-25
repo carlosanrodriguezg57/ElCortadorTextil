@@ -130,10 +130,10 @@
       </select>
 
       <label>Tipo de material</label>
-      <select id="material" onchange="toggleRolloInputs()">
-        <option value="1">Rollo de tela</option>
-        <option value="2">Bolsas</option>
-        <option value="3">Muestras</option>
+      <select id="material">
+        <option value="Rollo de tela">Rollo de tela</option>
+        <option value="Bolsas">Bolsas</option>
+        <option value="Muestras">Muestras</option>
       </select>
 
       <label>Cantidad</label>
@@ -194,48 +194,49 @@
       }
     }
 
-    function enviarRecepcion() {
-      const cliente_id = document.getElementById("cliente").value;
-      const material_id = document.getElementById("material").value;
-      const cantidad = document.getElementById("cantidad").value;
-      const unidad = document.getElementById("unidad").value;
-      const observaciones = document.getElementById("observaciones").value;
+    async function enviarRecepcion() {
+        const cliente_id = document.getElementById("cliente").value;
+        const tipo_material = document.getElementById("material").options[document.getElementById("material").selectedIndex].text;
+        const cantidad = document.getElementById("cantidad").value;
+        const unidad = document.getElementById("unidad").value;
+        const observaciones = document.getElementById("observaciones").value;
 
-      const data = {
-        cliente_id,
-        material_id,
-        cantidad,
-        unidad,
-        observaciones,
-        rollos: []
-      };
-
-      if (material_id === "1") {
-        const metrosInputs = document.getElementsByName("rollo_metros");
-        const obsInputs = document.getElementsByName("rollo_obs");
-
-        for (let i = 0; i < metrosInputs.length; i++) {
-          if (metrosInputs[i].value) {
-            data.rollos.push({
-              numero_rollo: i + 1,
-              metros: parseFloat(metrosInputs[i].value),
-              observaciones: obsInputs[i].value || ''
-            });
-          }
+        // Validación simple en el front
+        if (!cliente_id || !cantidad) {
+            alert("Por favor llene los campos obligatorios.");
+            return;
         }
-      }
 
-      console.log("Datos a enviar:", data);
-      alert("Recepción registrada (simulada). Revisa consola.");
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/recepcion`, {
+                method: 'POST',
+                credentials: "include", // Vital para enviar la cookie de sesión
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    cliente_id, 
+                    tipo_material, 
+                    cantidad, 
+                    unidad, 
+                    observaciones 
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(data.mensaje);
+                // Opcional: limpiar el formulario o redireccionar
+                location.reload(); 
+            } else {
+                alert("Error: " + data.mensaje);
+            }
+        } catch (err) {
+            console.error("Error en el fetch:", err);
+            alert("No se pudo conectar con el servidor.");
+        }
     }
 
-    async function verificarSesion() {
-      const res = await fetch("/api/session", { credentials: "include" });
-      const data = await res.json();
-      if (!data.logged) {
-        window.location.href = "/";
-      }
-    }
+
     verificarSesion();
 
 

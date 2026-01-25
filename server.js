@@ -1022,6 +1022,37 @@ app.get("/api/reporte_corte/:ordenId", requireLogin, async (req, res) => {
 
 
 /* ==========================================================
+   REGISTRAR RECEPCION
+========================================================== */
+app.post('/api/recepcion', (req, res) => {
+    // 1. Verificar si hay sesión activa
+    if (!req.session.logged) {
+        return res.status(401).json({ mensaje: "No autorizado. Inicie sesión." });
+    }
+
+    const { cliente_id, tipo_material, cantidad, unidad, observaciones } = req.body;
+    const usuario_id = req.session.usuarioId; // Extraído de la sesión
+
+    // 2. Validaciones básicas
+    if (!cliente_id || !tipo_material || !cantidad || !unidad) {
+        return res.status(400).json({ mensaje: "Faltan campos obligatorios." });
+    }
+
+    const query = `
+        INSERT INTO recepcion (cliente_id, usuario_id, tipo_material, cantidad, unidad, observaciones) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(query, [cliente_id, usuario_id, tipo_material, cantidad, unidad, observaciones], (err, result) => {
+        if (err) {
+            console.error("Error al insertar recepción:", err);
+            return res.status(500).json({ mensaje: "Error en el servidor al guardar." });
+        }
+        res.status(200).json({ mensaje: "Recepción registrada correctamente.", id: result.insertId });
+    });
+});
+
+/* ==========================================================
    REPORTE
 ========================================================== */
 // GET /api/reportes/cortes?fecha_inicio=2025-01-01&fecha_fin=2025-12-31&cliente_id=5&page=1&pageSize=25
