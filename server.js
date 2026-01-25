@@ -48,17 +48,41 @@ app.use(session({
   secret: "clave_super_secreta", 
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 2 } // 2 horas de sesión
+  cookie: { 
+    maxAge: 1000 * 60 * 60 * 2,
+    secure: false,    // Obligatorio en HTTP (sin S) para que funcione en red local
+    sameSite: 'lax'   // Permite que la cookie se envíe correctamente entre rutas
+  }
 }));
 
 // middleware
 function requireLogin(req, res, next) {
-  if (!req.session || !req.session.user) {
-    // 🔁 Redirigir a login.html en vez de enviar JSON
-    return res.sendFile(path.join(__dirname, "public","login.html"));
-  }
-  next();
+    if (!req.session || !req.session.user) {
+        // Si la petición viene de un FETCH (API), responde con JSON
+        if (req.originalUrl.startsWith('/api/')) {
+            return res.status(401).json({ logged: false, mensaje: "Sesión expirada" });
+        }
+        // Si es una navegación normal, envía el login.html
+        return res.sendFile(path.join(__dirname, "public", "login.html"));
+    }
+    next();
 }
+
+app.use(cors({
+  origin: true, // Permite cualquier origen que envíe credenciales (solo para pruebas)
+  credentials: true
+}));
+app.use(express.json());
+
+
+app.use((req, res, next) => {
+  console.log(`--- Nueva Petición ---`);
+  console.log(`Ruta: ${req.method} ${req.url}`);
+  console.log(`¿Tiene sesión?: ${req.session && req.session.user ? "SÍ ✅" : "NO ❌"}`);
+  console.log(`Cookie recibida: ${req.headers.cookie || "Ninguna"}`);
+  next();
+});
+
 // middleware/requireRole.js
 export function requireRole(rolesPermitidos) {
   return (req, res, next) => {
@@ -109,6 +133,9 @@ app.get("/js/include-nav.js", (req, res) => {
 });
 app.get("/home", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "Home.html"));
+});
+app.get("/tabla_recepciones", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "Tabla_recepciones.html"));
 });
 
 // 🟦 Solo roles específicos (y administrador)
@@ -175,15 +202,6 @@ app.get("/archivo/:nombre", requireLogin, (req, res) => {
 
 
 dotenv.config();
-
-app.use(cors({
-  origin:[
-    "http://192.168.2.4:3000",
-    "http://localhost:3000"
-  ],
-  credentials: true
-}));
-app.use(express.json());
 
 //Verificar sesion al recargar
 app.get("/api/session", (req, res) => {
@@ -1024,32 +1042,61 @@ app.get("/api/reporte_corte/:ordenId", requireLogin, async (req, res) => {
 /* ==========================================================
    REGISTRAR RECEPCION
 ========================================================== */
-app.post('/api/recepcion', (req, res) => {
-    // 1. Verificar si hay sesión activa
-    if (!req.session.logged) {
-        return res.status(401).json({ mensaje: "No autorizado. Inicie sesión." });
-    }
+app.post("/api/recepcion", async (req, res) => {
+  // 1. Validar sesión
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ mensaje: "Sesión no válida" });
+  }
 
-    const { cliente_id, tipo_material, cantidad, unidad, observaciones } = req.body;
-    const usuario_id = req.session.usuarioId; // Extraído de la sesión
+  const { cliente_id, tipo_material, cantidad, unidad, observaciones } = req.body;
+  const usuario_id = req.session.user.id; // Extraemos el ID del usuario logueado
 
-    // 2. Validaciones básicas
-    if (!cliente_id || !tipo_material || !cantidad || !unidad) {
-        return res.status(400).json({ mensaje: "Faltan campos obligatorios." });
-    }
+  try {
+    // 2. Usar pool.query con await, igual que en crear-clientes
+    await pool.query(
+      `INSERT INTO recepcion (cliente_id, usuario_id, tipo_material, cantidad, unidad, observaciones)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [cliente_id, usuario_id, tipo_material, cantidad, unidad, observaciones]
+    );
 
-    const query = `
-        INSERT INTO recepcion (cliente_id, usuario_id, tipo_material, cantidad, unidad, observaciones) 
-        VALUES (?, ?, ?, ?, ?, ?)
-    `;
+    res.json({ mensaje: "Recepción registrada exitosamente" });
+  } catch (err) {
+    console.error("❌ Error al registrar recepción:", err);
+    res.status(500).json({ mensaje: "Error al guardar en la base de datos" });
+  }
+});
 
-    db.query(query, [cliente_id, usuario_id, tipo_material, cantidad, unidad, observaciones], (err, result) => {
-        if (err) {
-            console.error("Error al insertar recepción:", err);
-            return res.status(500).json({ mensaje: "Error en el servidor al guardar." });
-        }
-        res.status(200).json({ mensaje: "Recepción registrada correctamente.", id: result.insertId });
-    });
+/* ==========================================================
+   MOSTRAR RECEPCION
+========================================================== */
+
+app.get("/api/recepciones", async (req, res) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ mensaje: "Sesión no válida" });
+  }
+
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        r.id, 
+        c.nombre_empresa AS cliente, 
+        u.nombre AS usuario, 
+        r.tipo_material, 
+        r.cantidad, 
+        r.unidad, 
+        r.observaciones, 
+        DATE_FORMAT(r.fecha_registro, '%d/%m/%Y %H:%i') AS fecha
+      FROM recepcion r
+      JOIN clientes c ON r.cliente_id = c.id
+      JOIN usuarios u ON r.usuario_id = u.id
+      ORDER BY r.fecha_registro DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ Error al obtener recepciones:", err);
+    res.status(500).json({ mensaje: "Error al obtener los datos" });
+  }
 });
 
 /* ==========================================================

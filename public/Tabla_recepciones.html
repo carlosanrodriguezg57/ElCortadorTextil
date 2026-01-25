@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Historial de Recepciones</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { display: flex; height: 100vh; background-color: #f4f4f4; }
+
+    /* Contenido principal */
+    .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+    h1 { font-size: 24px; margin-bottom: 20px; color: #051258; }
+
+    /* Tabla Bonita */
+    .table-container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table th {
+      background-color: #051258; /* Azul Rey */
+      color: white;
+      text-align: left;
+      padding: 12px;
+      font-size: 14px;
+    }
+
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      font-size: 14px;
+      color: #333;
+    }
+
+    table tr:hover { background-color: #f1f1f1; }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="navbar"></div>
+  <script src="/js/include-nav.js"></script>
+
+  <div class="main-content">
+    <h1>Historial de Recepción de Materiales</h1>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Material</th>
+            <th>Cantidad</th>
+            <th>Registrado por</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-cuerpo">
+          </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { API_BASE_URL } from "/config.js";
+
+    async function cargarRecepciones() {
+      const cuerpo = document.getElementById("tabla-cuerpo");
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/recepciones`, { credentials: "include" });
+        
+        if (res.status === 401) {
+          window.location.href = "/";
+          return;
+        }
+
+        const datos = await res.json();
+        cuerpo.innerHTML = "";
+
+        datos.forEach(reg => {
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${reg.fecha}</td>
+            <td><strong>${reg.cliente}</strong></td>
+            <td><span class="badge">${reg.tipo_material}</span></td>
+            <td>${reg.cantidad} ${reg.unidad}</td>
+            <td>${reg.usuario}</td>
+            <td>${reg.observaciones || '-'}</td>
+          `;
+          cuerpo.appendChild(fila);
+        });
+
+      } catch (err) {
+        console.error("Error cargando la tabla:", err);
+      }
+    }
+
+    window.onload = cargarRecepciones;
+  </script>
+</body>
+</html>

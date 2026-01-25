@@ -157,7 +157,7 @@
         <div id="rollosContainer"></div>
       </div>
 
-      <button type="button" onclick="enviarRecepcion()">Registrar</button>
+      <button type="button" id="Registrar">Registrar</button>
     </form>
   </div>
 
@@ -221,6 +221,12 @@
                 })
             });
 
+            if (res.status === 401) {
+                alert("Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.");
+                window.location.href = "/login.html";
+                return;
+            }
+
             const data = await res.json();
 
             if (res.ok) {
@@ -236,6 +242,13 @@
         }
     }
 
+    async function verificarSesion() {
+      const res = await fetch("/api/session", { credentials: "include" });
+      const data = await res.json();
+      if (!data.logged) {
+        window.location.href = "/";
+      }
+    }
 
     verificarSesion();
 
@@ -258,6 +271,7 @@
       console.error("Error cargando clientes:", err);
     }
   }
+  document.getElementById("Registrar").addEventListener("click",enviarRecepcion);
   window.onload = cargarClientes
   </script>
   <script src="/js/pwa.js"></script>
