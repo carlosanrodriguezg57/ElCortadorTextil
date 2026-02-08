@@ -910,7 +910,7 @@ app.get("/api/cortes_reporte", async (req, res) => {
        FROM ORDENES o
        LEFT JOIN CLIENTES c ON o.cliente_id = c.id
        LEFT JOIN CORTES cort ON cort.ordenes_id = o.id
-       ORDER BY o.created_date ASC`
+       ORDER BY o.created_date DESC`
     );
     const data = mapDateFields(rows, ["created_date", "fecha_programada"]);
     res.json(data);
@@ -1215,7 +1215,7 @@ app.get("/api/reporte_corte/:ordenId/pdf", requireLogin, async (req, res) => {
 
     const [liqRows] = await pool.query(
       `SELECT l.numero_rollo, l.tipo_tela, l.largo_capa, l.cantidad_capas, 
-          l.n_retazos, l.metraje_retazos, l.sesgo
+          l.n_retazos, l.metraje_retazos, l.sesgo, l.metros_ticket
         FROM liquidacion l
         JOIN cortes c ON l.corte_id = c.id
         WHERE c.ordenes_id = ?
@@ -1279,17 +1279,31 @@ app.get("/api/reporte_corte/:ordenId/pdf", requireLogin, async (req, res) => {
     doc.moveDown(1);
     drawLine(doc);
 
+    const liqProcesada = liqRows.map(row => {
+        const total = (row.largo_capa || 0) * (row.cantidad_capas || 0);
+        const diferencia = total - (row.metros_ticket || 0);
+        
+        return {
+            ...row,
+            total: total.toFixed(2),
+            diferencia: diferencia.toFixed(2)
+        };
+    });
+
     // === TABLA LIQUIDACIÓN ===
     sectionTitle(doc, "Liquidación de Tela");
-    if (liqRows.length > 0) {
-      drawTable(doc, liqRows, [
-        { key: "numero_rollo", label: "N° Rollo", width: 60 },
-        { key: "tipo_tela", label: "Tipo Tela", width: 90 },
-        { key: "largo_capa", label: "Largo Capa", width: 80 },
-        { key: "cantidad_capas", label: "Capas", width: 60 },
-        { key: "n_retazos", label: "N Retazos", width: 60 },
-        { key: "metraje_retazos", label: "Metraje Retazos", width: 90 },
-        { key: "sesgo", label: "Sesgo", width: 70 },
+    if (liqProcesada.length > 0) {
+      drawTable(doc, liqProcesada, [
+        { key: "numero_rollo", label: "N° Rollo", width: 50 },
+        { key: "tipo_tela", label: "Tipo Tela", width: 80 },
+        { key: "metros_ticket", label: "M. Ticket", width: 70 }, // Nueva columna
+        { key: "largo_capa", label: "L. Capa", width: 60 },
+        { key: "cantidad_capas", label: "Capas", width: 50 },
+        { key: "n_retazos", label: "# Retazos", width: 50 },
+        { key: "metraje_retazos", label: "Metros Retazos", width: 90 },
+        { key: "sesgo", label: "Sesgo", width: 50 },
+        { key: "total", label: "Total", width: 60 },          // Columna calculada
+        { key: "diferencia", label: "Diferencia", width: 70 }   // Columna calculada
       ]);
     } else {
       doc.text("Sin registros de liquidación.");

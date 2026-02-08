@@ -10,9 +10,9 @@
     .h1{font-size:20px;font-weight:700;margin:0 0 10px}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .muted{color:#666}
-    .table{width:100%;border-collapse:collapse;margin-top:8px}
-    .table th,.table td{border:1px solid #e5e7eb;padding:8px;text-align:center}
-    .table th{background:#051258;color:#fff;font-weight:600}
+    .table{width:100%;border-collapse:collapse;margin-top:8px;table-layout:fixed;}
+    .table td, th {border:1px solid #e5e7eb;padding:2px;text-align:center; font-size:12px;white-space:nowrap; table-layout: fixed;}
+    .table th{background:#051258;color:#fff;font-weight:500;overflow: hidden;white-space: nowrap; font-size:12px;}
     .badge{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:9999px;padding:4px 10px;font-size:12px}
     .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
     .btn{background:#051258;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
@@ -69,11 +69,12 @@
       <p><strong>Ficha técnica:</strong> <span id="archivoFicha"></span></p>
       <div class="matriz-container">
         <h3>Cantidad piezas</h3>
-        <table class="matriz">
+        <table class="table">
           <thead>
             <tr>
               <th>Material</th>
               <th>Cantidad</th>
+              <th>Tipo</th>
             </tr>
           </thead>
           <tbody>
@@ -112,7 +113,9 @@
                 <th>N° Retazos</th>
                 <th>Metraje Retazos (m)</th>
                 <th>Sesgo</th>
-                <th></th>
+                <th>Total</th>
+                <th>Diferencia</th>
+                <th>Borrar</th>
               </tr>
             </thead>
             <tbody id="tbodyLiquidacion"></tbody>
@@ -400,6 +403,23 @@
     restaurarEstado();
     }
     // --- Liquidación ---
+    function calcularFilaLiquidacion(tr) {
+      const ticket = parseFloat(tr.querySelector(".metros_ticket").value) || 0;
+      const largo = parseFloat(tr.querySelector(".largo-capa").value) || 0;
+      const capas = parseFloat(tr.querySelector(".cantidad-capas").value) || 0;
+      
+      const inputTotal = tr.querySelector(".total");
+      const inputDiferencia = tr.querySelector(".diferencia");
+
+      // total = largo capa * cantidad capas
+      const total = largo * capas;
+      inputTotal.value = total.toFixed(2);
+
+      // diferencia = total - metros ticket
+      const diferencia = total - ticket;
+      inputDiferencia.value = diferencia.toFixed(2);
+    }
+
       const tbodyLiq = document.getElementById("tbodyLiquidacion");
       const btnAgregarFila = document.getElementById("btnAgregarFila");
 
@@ -422,6 +442,8 @@
           <td><input type="number" min="0" placeholder="0" class="n-retazos"></td>
           <td><input type="number" step="0.01" min="0" placeholder="0.00" class="metraje-retazos"></td>
           <td><input type="number" min="0" placeholder="0" class="sesgo"></td>
+          <td><input type="number" min="0" placeholder="0" class="total" readonly tabindex="-1" style="background-color: #f0f0f0;"></td>
+          <td><input type="number" min="0" placeholder="0" class="diferencia" readonly tabindex="-1" style="background-color: #f0f0f0;"></td>
           <td><button type="button" class="btn btnEliminarFila" style="background:#e11d48">🗑</button></td>
         `;
         tr.querySelector(".btnEliminarFila").onclick = () => tr.remove();
@@ -436,6 +458,15 @@
       tbodyLiq.appendChild(crearFilaLiquidacion());
     
     cargarOrden();
+
+    // Escuchar cambios en la tabla de liquidación para recalcular
+    document.getElementById("tbodyLiquidacion").addEventListener("input", (e) => {
+      const tr = e.target.closest("tr");
+      if (tr) {
+        calcularFilaLiquidacion(tr);
+        guardarEstado(); // Aprovechamos para guardar en LocalStorage
+      }
+    });
 
     async function verificarSesion() {
       const res = await fetch("/api/session", { credentials: "include" });
