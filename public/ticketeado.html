@@ -47,7 +47,35 @@
       </div>
     </div>
 
+    <div class="card">
+        <h3>Cantidad piezas</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tela Principal</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_TP" readonly></td>
+            </tr>
+            <tr>
+              <td>Forro</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_forro" readonly></td>
+            </tr>
+            <tr>
+              <td>Fusionado (entretela)</td>
+              <td><input type="number" min="0" placeholder="0" id="N_piezas_fusionado" readonly></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    <div class="card">
     <table class="table" id="tablaMatriz"></table>
+    </div>
 
     <!-- Checklist -->
     <div class="card">
@@ -122,6 +150,9 @@
     document.getElementById("observacionesOrden").textContent = corte.observacionesOrden || "-";
     document.getElementById("usuarioCorte").textContent = corte.usuario_nombre || "-";
     document.getElementById("referencia").textContent = corte.referencia || "-";
+    document.getElementById("N_piezas_TP").value = corte.cantidad_piezas_telaprincipal;
+    document.getElementById("N_piezas_forro").value = corte.cantidad_piezas_forro;
+    document.getElementById("N_piezas_fusionado").value = corte.cantidad_piezas_fusionado;
 
     // --- Tabla de matriz de colores/tallas ---
     const table = document.getElementById("tablaMatriz");

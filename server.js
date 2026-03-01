@@ -773,6 +773,9 @@ app.get("/api/cortes/:id", async (req, res) => {
           c.cliente_id,
           c.usuario_id,
           c.ordenes_id,
+          c.cantidad_piezas_telaprincipal,
+          c.cantidad_piezas_forro,
+          c.cantidad_piezas_fusionado,
           cli.nombre_empresa AS cliente_nombre,
           usu.nombre AS usuario_nombre,
           ord.referencia AS referencia,
@@ -1215,7 +1218,7 @@ app.get("/api/reporte_corte/:ordenId/pdf", requireLogin, async (req, res) => {
 
     const [liqRows] = await pool.query(
       `SELECT l.numero_rollo, l.tipo_tela, l.largo_capa, l.cantidad_capas, 
-          l.n_retazos, l.metraje_retazos, l.sesgo, l.metros_ticket
+          l.n_retazos, l.metraje_retazos, l.sesgo, l.metros_ticket, l.color
         FROM liquidacion l
         JOIN cortes c ON l.corte_id = c.id
         WHERE c.ordenes_id = ?
@@ -1280,8 +1283,18 @@ app.get("/api/reporte_corte/:ordenId/pdf", requireLogin, async (req, res) => {
     drawLine(doc);
 
     const liqProcesada = liqRows.map(row => {
-        const total = (row.largo_capa || 0) * (row.cantidad_capas || 0);
-        const diferencia = total - (row.metros_ticket || 0);
+        // Convertimos cada valor a número explícitamente para evitar concatenación
+        const largo = Number(row.largo_capa) || 0;
+        const capas = Number(row.cantidad_capas) || 0;
+        const sesgo = Number(row.sesgo) || 0;
+        const metraje_retazos = Number(row.metraje_retazos) || 0;
+        const ticket = Number(row.metros_ticket) || 0;
+
+        // Ahora la operación será puramente matemática
+        const total = (largo * capas) + sesgo + metraje_retazos;
+        const diferencia = total - ticket;
+        
+        console.log("Total calculado:", total);
         
         return {
             ...row,
@@ -1295,6 +1308,7 @@ app.get("/api/reporte_corte/:ordenId/pdf", requireLogin, async (req, res) => {
     if (liqProcesada.length > 0) {
       drawTable(doc, liqProcesada, [
         { key: "numero_rollo", label: "N° Rollo", width: 50 },
+        { key: "color", label: "Color", width: 50 },
         { key: "tipo_tela", label: "Tipo Tela", width: 80 },
         { key: "metros_ticket", label: "M. Ticket", width: 70 }, // Nueva columna
         { key: "largo_capa", label: "L. Capa", width: 60 },
