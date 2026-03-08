@@ -1393,11 +1393,73 @@ function getXOffset(columns, current) {
   return columns.slice(0, index).reduce((sum, c) => sum + c.width, 0);
 }
 
+import QRCode from 'qrcode';
+import os from 'os';
+/* ==========================================================
+   GENERAR QR
+========================================================== */
+// Endpoint para obtener la URL de acceso y el QR
+app.get("/api/obtener-qr", async (req, res) => {
+    try {
+        const interfaces = os.networkInterfaces();
+        let ipLocal = 'localhost';
+
+        for (const name in interfaces) {
+            for (const iface of interfaces[name]) {
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    ipLocal = iface.address;
+                }
+            }
+        }
+
+        const urlAcceso = `http://${ipLocal}:3000`;
+        
+        // Genera el QR como una cadena de texto Base64 (imagen)
+        const qrBase64 = await QRCode.toDataURL(urlAcceso);
+
+        res.json({
+            url: urlAcceso,
+            qr: qrBase64
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Error al generar QR" });
+    }
+});
 
 /* ==========================================================
    INICIO SERVIDOR
 ========================================================== */
-const port = process.env.PORT || 3000;
-app.listen(port, "0.0.0.0", () =>
-  console.log(`🚀 API corriendo en http://0.0.0.0:${port}`)
-);
+import qrcode from 'qrcode-terminal';
+
+const PORT = 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+    const interfaces = os.networkInterfaces();
+    let ipLocal = 'localhost';
+
+    // Buscamos la IP real de tu PC en la red local
+    for (const name in interfaces) {
+        for (const iface of interfaces[name]) {
+            // Filtramos para obtener la IPv4 que no sea interna (127.0.0.1)
+            if (iface.family === 'IPv4' && !iface.internal) {
+                ipLocal = iface.address;
+            }
+        }
+    }
+
+    const urlAcceso = `http://${ipLocal}:${PORT}`;
+
+    console.log("\n" + "=".repeat(50));
+    console.log(`🚀 SERVIDOR DE CORTE ACTIVO`);
+    console.log(`🌐 URL DE ACCESO: ${urlAcceso}`);
+    console.log("=".repeat(50));
+    
+    // Generamos el código QR
+    console.log("\n📲 ESCANEA CON LA TABLET PARA ENTRAR:");
+    
+    // El método generate acepta un callback si se usa en ESM en algunos entornos, 
+    // pero aquí lo forzamos a mostrarse directamente:
+    qrcode.generate(urlAcceso, { small: true });
+    
+    console.log("=".repeat(50) + "\n");
+});

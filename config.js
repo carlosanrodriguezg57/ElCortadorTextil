@@ -1,6 +1,7 @@
-// Detecta si se está ejecutando localmente o en red
-const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+// Detecta la IP o Hostname actual desde la barra de direcciones del navegador
+const currentHost = window.location.hostname;
 
-export const API_BASE_URL = isLocal
-  ? "http://localhost:3000"      // Si estás en tu PC
-  : "http://192.168.2.4:3000";   // Si accedes desde la red
+// Construye la URL base usando el mismo host y el puerto 3000
+export const API_BASE_URL = `http://${currentHost}:3000`;
+
+console.log("Conectado a la API en:", API_BASE_URL);

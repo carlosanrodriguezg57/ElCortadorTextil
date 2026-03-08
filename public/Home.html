@@ -218,7 +218,16 @@
   <div id="navbar"></div>
 
   <div class="main-content">
-     <h1>Órdenes Programadas</h1>
+    <div id="seccion-acceso-tablet" style="text-align: center; padding: 15px; background: #f8f9fa; border: 5px solid #ddd; border-radius: 10px; margin: 20px;">
+        <h4 style="color: #051258; margin-bottom: 10px; font-size: 14px;">Acceso para Tablets</h4>
+        
+        <img id="img-qr-auto" src="" alt="Cargando QR..." style="width: 150px; height: 150px; display: none; margin: 0 auto;">
+        
+        <div id="qr-loader" style="font-size: 12px; color: #666;">Generando código...</div>
+        
+        <p id="texto-url-auto" style="font-size: 12px; font-family: monospace; margin-top: 8px; margin-bottom: 8px; color: #333;"></p>
+    </div>
+    <h1>Órdenes Programadas</h1>
   <div class="ordenes-container" id="ordenesContainer">
     <!-- Aquí se insertan las tarjetas con JS -->
   </div>
@@ -307,6 +316,34 @@
         window.location.href = "/";
       }
     }
+    // Función para obtener y mostrar el QR automáticamente
+async function inicializarQR() {
+    const img = document.getElementById("img-qr-auto");
+    const loader = document.getElementById("qr-loader");
+    const texto = document.getElementById("texto-url-auto");
+
+    try {
+        const res = await fetch("/api/obtener-qr");
+        if (!res.ok) throw new Error("Error en la respuesta del servidor");
+        
+        const data = await res.json();
+
+        // Asignar los datos recibidos
+        img.src = data.qr;
+        texto.innerText = data.url;
+
+        // Mostrar la imagen y ocultar el cargando
+        img.style.display = "block";
+        loader.style.display = "none";
+        
+    } catch (err) {
+        console.error("❌ No se pudo cargar el QR de acceso:", err);
+        if (loader) loader.innerText = "Error al generar acceso";
+    }
+}
+
+// Ejecutar cuando el DOM esté listo
+document.addEventListener("DOMContentLoaded", inicializarQR);
     verificarSesion();
   </script>
   <script>
